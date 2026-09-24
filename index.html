@@ -491,7 +491,12 @@
           return;
         }
         const isRahman = nameQuery.includes('rahman') || (!nameQuery && (normalized === 'm268' || periodKey));
-        const rows = isRahman || !matches.length ? data.sales : matches;
+        const dateSalesMap = dateKey ? ((data.dailySales[dateKey] || {}).sales || {}) : {};
+        const dateSalesNames = new Set(Object.keys(dateSalesMap).map(name => name.toLowerCase()));
+        const dateOnly = Boolean(dateKey) && !nameQuery && !isRahman && !isBnplFilter && !selectedUnit;
+        const rows = dateOnly
+          ? data.sales.filter(sale => dateSalesNames.has(sale.name.toLowerCase()))
+          : isRahman || !matches.length ? data.sales : matches;
         const period = periodKey === 'LM' ? '2026-08' : periodKey === 'LY' ? '2025-09' : data.currentMonth;
         const daily = dateKey ? data.dailyBnpl[dateKey] : null;
         const monthly = data.periodTotals[period] || { amount: 0, qty: 0 };
@@ -550,7 +555,7 @@
           .sort((a, b) => b.qty - a.qty);
         const selectedNames = new Set(rows.map(sale => sale.name.toLowerCase()));
         const dateSales = dateKey
-          ? Object.entries((data.dailySales[dateKey] || {}).sales || {})
+          ? Object.entries(dateSalesMap)
             .filter(([name]) => isRahman || selectedNames.has(name.toLowerCase()))
             .map(([name, values]) => ({
               name,
