@@ -30,9 +30,11 @@ LOGIN_PAGE = """<!doctype html>
     input,button{box-sizing:border-box;width:100%;padding:12px;border-radius:9px;border:1px solid #43536d;font:inherit}
     input{background:#0e1727;color:#fff}button{margin-top:18px;background:#2f8cff;color:#fff;border:0;font-weight:700;cursor:pointer}
     #error{color:#ff9e9e;min-height:1.3em;margin-top:12px}
+    .verse{margin:20px 0 6px;color:#f7d88a;font-family:serif;font-size:1.35rem;line-height:1.8}
+    .meaning{margin:0;color:#c9d5e8;font-style:italic;text-align:center}
   </style>
 </head>
-<body><form id="login"><h1>M268 Dashboard</h1><p>Masukkan kata sandi untuk meminta izin akses.</p>
+<body><form id="login"><h1>M268 Dashboard</h1><p class="verse" dir="rtl">فَبِأَيِّ آَلَاءِ رَبِّكُمَا تُكَذِّبَانِ</p><p class="meaning">“Maka nikmat Tuhanmu yang manakah yang kamu dustakan?”</p><p>Masukkan kata sandi untuk meminta izin akses.</p>
 <label for="password">Kata sandi</label><input id="password" name="password" type="password" autocomplete="current-password" required>
 <button type="submit">Minta izin akses</button><div id="error"></div></form>
 <script>
