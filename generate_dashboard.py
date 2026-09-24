@@ -118,13 +118,27 @@ def parse_dashboard():
         name = str(raw_name).strip()
         transaction_qty = int(qty or 0)
         transaction_amount = float(amount or 0)
+        category_name = str(category or '').strip().upper()
+        if category_name in ('PHONE', 'TABLETS', 'LAPTOPS', 'WATCH'):
+            daily_category = 'device'
+        elif category_name == 'SOFTWARE':
+            daily_category = 'vas'
+        else:
+            daily_category = 'accessories'
         if transaction_amount:
             daily_sales.setdefault(date_text, {'qty': 0, 'amount': 0, 'sales': {}})
             daily_sales[date_text]['qty'] += transaction_qty
             daily_sales[date_text]['amount'] += transaction_amount
-            daily_sales[date_text]['sales'].setdefault(name, {'qty': 0, 'amount': 0})
-            daily_sales[date_text]['sales'][name]['qty'] += transaction_qty
-            daily_sales[date_text]['sales'][name]['amount'] += transaction_amount
+            daily_sales[date_text]['sales'].setdefault(name, {
+                'qty': 0, 'amount': 0, 'achievement': 0,
+                'deviceAchievement': 0, 'accessoriesAchievement': 0,
+                'vasAchievement': 0
+            })
+            daily_sale = daily_sales[date_text]['sales'][name]
+            daily_sale['qty'] += transaction_qty
+            daily_sale['amount'] += transaction_amount
+            daily_sale['achievement'] += transaction_amount
+            daily_sale[f'{daily_category}Achievement'] += transaction_amount
         brand_name = str(brand or '').strip().upper()
         if brand_name in ('KOALA', 'QOALA'):
             daily_qoala.setdefault(date_text, {'qty': 0, 'amount': 0, 'sales': {}})
