@@ -720,9 +720,9 @@
             const value = new Date(year + yearOffset, month - 1 + monthOffset, day + dayOffset);
             return `${value.getFullYear()}-${String(value.getMonth() + 1).padStart(2, '0')}-${String(value.getDate()).padStart(2, '0')}`;
           };
-          const salesLw = Number(data.msrClosingSummary?.lw || data.dailySales?.[comparisonDate(0, 0, -7)]?.amount || 0);
-          const salesLm = Number(data.msrClosingSummary?.lm || data.historicalLastMonth?.[comparisonDate(0, -1, 0)] || data.dailySales?.[comparisonDate(0, -1, 0)]?.amount || 0);
-          const salesLy = Number(data.msrClosingSummary?.ly || data.historicalLastYear?.[comparisonDate(-1, 0, 0)] || data.dailySales?.[comparisonDate(-1, 0, 0)]?.amount || 0);
+          const salesLw = Number(data.closingLw || data.msrClosingSummary?.lw || data.dailySales?.[comparisonDate(0, 0, -7)]?.amount || 0);
+          const salesLm = Number(data.closingLm || data.msrClosingSummary?.lm || data.historicalLastMonth?.[comparisonDate(0, -1, 0)] || data.dailySales?.[comparisonDate(0, -1, 0)]?.amount || 0);
+          const salesLy = Number(data.closingLy || data.msrClosingSummary?.ly || data.historicalLastYear?.[comparisonDate(-1, 0, 0)] || data.dailySales?.[comparisonDate(-1, 0, 0)]?.amount || 0);
           const comparePct = value => closingStoreTarget ? ` (${(value / closingStoreTarget * 100).toFixed(0)}%)` : '';
           const lobRows = combinedLob.map(item => `<tr><td>${escapeHtml(item.lob)}</td><td>${item.value}</td></tr>`).join('');
           const topBottom = Object.entries(dateSalesMap)
@@ -749,8 +749,8 @@
               ['Total XXL', dateServices.Xxl?.amount ? formatRp(dateServices.Xxl.amount) : ''],
               ['MTD Sales', `${formatRp(mtdRevenue)} (${mtdPct.toFixed(0)}%)`],
               ['Sales LW', `${formatRp(salesLw)}${comparePct(salesLw)}`],
-              ['Sales LM', `${formatRp(salesLm)}${comparePct(salesLm)}`],
-              ['Sales LY', `${formatRp(salesLy)}${comparePct(salesLy)}`],
+              ['Sales LM (MSR)', `${formatRp(salesLm)}${comparePct(salesLm)}`],
+              ['Sales LY (MSR)', `${formatRp(salesLy)}${comparePct(salesLy)}`],
             ]
             : [
               ['Target Store', `${formatRp(salesDailyTarget)} (${targetPct.toFixed(0)}%)`],
