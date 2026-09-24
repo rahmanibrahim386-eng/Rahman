@@ -54,15 +54,16 @@ def parse_dashboard():
     target_row = rekap_rows[1]
     achievement_row = rekap_rows[2]
     total_device_row = rekap_rows[10]
-    stock_columns = {'iPhone': (2, 4, 3), 'iPad': (9, 11, 10), 'Mac': (16, 18, 17), 'Apple Watch': (23, 25, 24)}
+    stock_columns = {'iPhone': (2, 4, 3, 5), 'iPad': (9, 11, 10, 12), 'Mac': (16, 18, 17, 19), 'Apple Watch': (23, 25, 24, 26)}
     stock = {}
-    for label, (article_col, qty_col, description_col) in stock_columns.items():
+    for label, (article_col, qty_col, description_col, price_col) in stock_columns.items():
         items = []
         for row in soh.iter_rows(min_row=6, values_only=True):
-            article, qty, description = row[article_col], row[qty_col], row[description_col]
+            article, qty, description, price = row[article_col], row[qty_col], row[description_col], row[price_col]
             if article and description:
-                items.append({'article': str(article).strip(), 'description': str(description).strip(), 'qty': int(qty or 0)})
-        stock[label] = {'qty': sum(item['qty'] for item in items), 'items': items}
+                unit_price = float(str(price or 0).replace(',', '').replace(' ', '') or 0)
+                items.append({'article': str(article).strip(), 'description': str(description).strip(), 'qty': int(qty or 0), 'price': unit_price})
+        stock[label] = {'qty': sum(item['qty'] for item in items), 'amount': sum(item['qty'] * item['price'] for item in items), 'items': items}
 
     current_month = '2026-09'
     product_lob_by_article = {}
