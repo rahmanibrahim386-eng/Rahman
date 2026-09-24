@@ -546,6 +546,10 @@
         }
         const matches = data.sales.filter(sale => nameQuery && sale.name.toLowerCase().includes(nameQuery));
         const hasNonSalesFilter = selectedUnit || periodKey || dateKey || isBnplFilter || isClosingReport || normalized === 'rahman';
+        if (isClosingReport && (!nameQuery || !dateKey)) {
+          detailRoot.innerHTML = '<div class="detail-empty">Report Closing memerlukan nama sales dan tanggal. Contoh: ketik “closing Virginia”, lalu pilih tanggal closing pada kalender.</div>';
+          return;
+        }
         if (!matches.length && !hasNonSalesFilter) {
           detailRoot.innerHTML = `<div class="detail-empty">Tidak ada data sales yang cocok dengan “${escapeHtml(query)}”.</div>`;
           return;
@@ -674,6 +678,23 @@
             : rows.reduce((sum, sale) => sum + (sale.lob[lob] || 0), 0)
         }));
         if (selectedUnit) combinedLob = combinedLob.filter(item => item.lob === unitMap[selectedUnit]);
+        if (isClosingReport) {
+          const closingDateLabel = new Date(`${dateKey}T00:00:00`).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+          const closingRows = [
+            ['Store', 'M268'],
+            ['Date', closingDateLabel],
+            ['Status', dateTotalSales ? 'Done' : 'Not Done'],
+            ['Target Store', formatRp(data.dailyTarget)],
+            ['Total Sales', formatRp(dateTotalSales)],
+            ['Total Product', `${dateAppleQty} unit`],
+            ['Total Accessories', `${Math.max((data.dailySales[dateKey]?.qty || 0) - dateAppleQty, 0)} unit`],
+            ['Total Qoala', `${qoala}`],
+            ['Total Provider', `${provider}`],
+            ['Sales', rows.map(sale => sale.name).join(', ')],
+          ];
+          detailRoot.innerHTML = `<div class="sales-detail"><div class="sales-header"><h3>*M268 - Closing Report ${escapeHtml(closingDateLabel)}*</h3><span>Format closing file asli</span></div><table class="product-table"><tbody>${closingRows.map(([label, value]) => `<tr><th>${escapeHtml(label)}</th><td>${escapeHtml(value)}</td></tr>`).join('')}</tbody></table><h3>Detail LOB</h3><table class="product-table"><thead><tr><th>LOB</th><th>Qty</th></tr></thead><tbody>${combinedLob.map(item => `<tr><td>${escapeHtml(item.lob)}</td><td>${item.value}</td></tr>`).join('')}</tbody></table><div class="refresh-info">Closing difilter berdasarkan sales dan tanggal transaksi pada file sumber M268.</div></div>`;
+          return;
+        }
         const title = dateKey
           ? `Detail ${nameQuery ? rows.map(sale => escapeHtml(sale.name)).join(', ') : 'sales'} tanggal ${dateKey}`
           : isClosingReport ? 'Report Closing M268' : isRahman ? 'Detail Keseluruhan Tim' : rows.map(sale => escapeHtml(sale.name)).join(', ');
