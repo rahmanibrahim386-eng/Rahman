@@ -121,6 +121,8 @@
 
       .panel {
         padding: 22px;
+        min-width: 0;
+        overflow: hidden;
       }
 
       .panel h2 {
@@ -232,7 +234,7 @@
       .quick-filters button:hover { background: var(--brand); }
       .refresh-info { color: var(--muted); font-size: .82rem; margin-top: 10px; }
       .detail-empty { color: var(--muted); line-height: 1.5; }
-      .sales-detail { display: grid; gap: 18px; }
+      .sales-detail { display: grid; gap: 18px; min-width: 0; overflow-x: auto; }
       .sales-header { display: flex; justify-content: space-between; gap: 12px; align-items: baseline; }
       .sales-header h3 { margin: 0; font-size: 1.25rem; }
       .sales-header span { color: var(--muted); font-size: .86rem; }
@@ -240,7 +242,7 @@
       .detail-metric { background: rgba(255,255,255,.04); padding: 14px; border-radius: 12px; }
       .detail-metric b { display: block; font-size: 1.05rem; margin-top: 5px; }
       .detail-label { color: var(--muted); font-size: .76rem; text-transform: uppercase; letter-spacing: .06em; }
-      .product-table { width: 100%; border-collapse: collapse; font-size: .86rem; }
+      .product-table { width: 100%; min-width: 680px; border-collapse: collapse; font-size: .86rem; }
       .product-table th, .product-table td { padding: 10px 8px; border-bottom: 1px solid var(--line); text-align: left; }
       .product-table th { color: var(--muted); font-size: .72rem; text-transform: uppercase; letter-spacing: .06em; }
       .product-table td:last-child, .product-table th:last-child { text-align: right; }
