@@ -169,15 +169,19 @@ def parse_dashboard():
     daily_provider = {}
     daily_services = {}
     sales_period_totals = {}
-    historical_closing_totals = {}
+    historical_last_month = {}
+    historical_last_year = {}
     for row in msr.iter_rows(values_only=True):
-        for date_col, label_col, amount_col in ((38, 38, 41), (0, 0, 3)):
-            label = str(row[label_col] or '')
-            match = re.search(r'Total For\s+(\d{2}-\d{2}-\d{4})', label, re.IGNORECASE)
-            if match:
-                day, month, year = match.group(1).split('-')
-                date_key = f'{year}-{month}-{day}'
-                historical_closing_totals[date_key] = float(row[amount_col] or 0)
+        label = str(row[38] or '')
+        match = re.search(r'Total For\s+(\d{2}-\d{2}-\d{4})', label, re.IGNORECASE)
+        if match:
+            day, month, year = match.group(1).split('-')
+            historical_last_month[f'{year}-{month}-{day}'] = float(row[41] or 0)
+        label = str(row[0] or '')
+        match = re.search(r'Total For\s+(\d{2}-\d{2}-\d{4})', label, re.IGNORECASE)
+        if match:
+            day, month, year = match.group(1).split('-')
+            historical_last_year[f'{year}-{month}-{day}'] = float(row[3] or 0)
     service_totals = {}
     for row in spw.iter_rows(min_row=2, values_only=True):
         raw_date, raw_name, article, description, category, qty, amount, brand = row[0], row[2], row[4], row[5], row[6], row[7], row[8], row[9]
@@ -441,7 +445,8 @@ def parse_dashboard():
         'dailyServices': daily_services,
         'periodTotals': period_totals,
         'salesPeriodTotals': sales_period_totals,
-        'historicalClosingTotals': historical_closing_totals,
+        'historicalLastMonth': historical_last_month,
+        'historicalLastYear': historical_last_year,
         'closingTargetStore': closing_target_store,
         'closingTargetSf': closing_target_sf,
         'currentMonth': current_month,

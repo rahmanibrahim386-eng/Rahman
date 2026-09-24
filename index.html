@@ -719,8 +719,8 @@
             return `${value.getFullYear()}-${String(value.getMonth() + 1).padStart(2, '0')}-${String(value.getDate()).padStart(2, '0')}`;
           };
           const salesLw = data.dailySales?.[comparisonDate(0, 0, -7)]?.amount || 0;
-          const salesLm = data.historicalClosingTotals?.[comparisonDate(0, -1, 0)] || data.dailySales?.[comparisonDate(0, -1, 0)]?.amount || 0;
-          const salesLy = data.historicalClosingTotals?.[comparisonDate(-1, 0, 0)] || data.dailySales?.[comparisonDate(-1, 0, 0)]?.amount || 0;
+          const salesLm = data.historicalLastMonth?.[comparisonDate(0, -1, 0)] || data.dailySales?.[comparisonDate(0, -1, 0)]?.amount || 0;
+          const salesLy = data.historicalLastYear?.[comparisonDate(-1, 0, 0)] || data.dailySales?.[comparisonDate(-1, 0, 0)]?.amount || 0;
           const comparePct = value => closingStoreTarget ? ` (${(value / closingStoreTarget * 100).toFixed(0)}%)` : '';
           const lobRows = combinedLob.map(item => `<tr><td>${escapeHtml(item.lob)}</td><td>${item.value}</td></tr>`).join('');
           const topBottom = Object.entries(dateSalesMap)
