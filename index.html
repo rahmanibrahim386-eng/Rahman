@@ -291,6 +291,10 @@
           <button type="button" data-filter="CM">CM</button>
           <button type="button" data-filter="LM">LM</button>
           <button type="button" data-filter="LY">LY</button>
+          <button type="button" data-filter="stock iphone">Stock iPhone</button>
+          <button type="button" data-filter="stock mac">Stock Mac</button>
+          <button type="button" data-filter="stock watch">Stock Watch</button>
+          <button type="button" data-filter="stock ipad">Stock iPad</button>
           <button type="button" data-filter="BNPL">BNPL detail</button>
           <button type="button" data-filter="Kredivo">Kredivo</button>
           <button type="button" data-filter="Akulaku">Akulaku</button>
@@ -431,13 +435,15 @@
         ];
         const selectedBnplProvider = bnplProviders.find(([keyword]) => normalized.includes(keyword))?.[1];
         const isMadingFilter = normalized.includes('mading');
+        const stockUnitMap = { iphone: 'iPhone', ipad: 'iPad', mac: 'Mac', watch: 'Apple Watch' };
+        const selectedStockUnit = normalized.includes('stock') ? Object.keys(stockUnitMap).find(key => normalized.includes(key)) : null;
         const isRosterFilter = normalized.includes('roster');
         const unitMap = { iphone: 'iPhone', ipad: 'iPad', mac: 'Mac', desktop: 'Mac', laptop: 'Mac', watch: 'Apple Watch', airpods: 'AirPods' };
         const selectedUnit = Object.keys(unitMap).find(key => normalized.includes(key));
         const isBnplFilter = normalized.includes('bnpl') || Boolean(selectedBnplProvider);
         const periodKey = normalized.includes('ly') ? 'LY' : normalized.includes('lm') ? 'LM' : normalized.includes('cm') || normalized.includes('m268') ? 'CM' : '';
         const nameQuery = normalized
-          .replace(/\b(sales|staff|team|provider|unit|detail|iphone|ipad|mac|desktop|laptop|watch|apple|airpods|m268|cm|lm|ly|bnpl|kredivo|akulaku|hci|shopeepay|later|qoala|telkomsel|indosat|xl|xxl)\b/g, '')
+          .replace(/\b(stock|sales|staff|team|provider|unit|detail|iphone|ipad|mac|desktop|laptop|watch|apple|airpods|m268|cm|lm|ly|bnpl|kredivo|akulaku|hci|shopeepay|later|qoala|telkomsel|indosat|xl|xxl)\b/g, '')
           .trim();
         if (isRosterFilter) {
           detailRoot.innerHTML = `
@@ -446,6 +452,11 @@
               <table class="product-table"><thead><tr><th>Nama</th><th>Posisi</th><th>NIK</th><th>Join Date</th></tr></thead>
               <tbody>${data.roster.map(member => `<tr><td>${escapeHtml(member.name)}</td><td>${escapeHtml(member.position)}</td><td>${escapeHtml(member.nik)}</td><td>${escapeHtml(member.joinDate)}</td></tr>`).join('')}</tbody></table>
             </div>`;
+          return;
+        }
+        if (selectedStockUnit) {
+          const stockItem = data.stock?.[stockUnitMap[selectedStockUnit]] || { qty: 0, items: [] };
+          detailRoot.innerHTML = `<div class="sales-detail"><div class="sales-header"><h3>Stock ${stockUnitMap[selectedStockUnit]}</h3><span>Stock toko terbaru</span></div><div class="detail-metrics"><div class="detail-metric"><span class="detail-label">Total Qty Stock</span><b>${stockItem.qty}</b></div></div><table class="product-table"><thead><tr><th>Article</th><th>Deskripsi</th><th>Qty</th></tr></thead><tbody>${stockItem.items.length ? stockItem.items.map(item => `<tr><td>${escapeHtml(item.article)}</td><td>${escapeHtml(item.description)}</td><td>${item.qty}</td></tr>`).join('') : '<tr><td colspan="3">Tidak ada stok.</td></tr>'}</tbody></table></div>`;
           return;
         }
         const serviceKeywords = ['qoala', 'telkomsel', 'indosat', 'xl', 'xxl'];

@@ -43,6 +43,7 @@ def parse_dashboard():
     ws = wb['Dashboard']
     rekap = wb['M268 REKAP']
     spw = wb['SPW']
+    soh = wb['SOH']
     bnpl_wb = load_workbook(BNPL_WORKBOOK, data_only=True, read_only=True)
     bnpl_ws = bnpl_wb['R DATA BNPL']
     lob_wb = load_workbook(LOB_WORKBOOK, data_only=True, read_only=True)
@@ -53,6 +54,15 @@ def parse_dashboard():
     target_row = rekap_rows[1]
     achievement_row = rekap_rows[2]
     total_device_row = rekap_rows[10]
+    stock_columns = {'iPhone': (2, 4, 3), 'iPad': (9, 11, 10), 'Mac': (16, 18, 17), 'Apple Watch': (23, 25, 24)}
+    stock = {}
+    for label, (article_col, qty_col, description_col) in stock_columns.items():
+        items = []
+        for row in soh.iter_rows(min_row=6, values_only=True):
+            article, qty, description = row[article_col], row[qty_col], row[description_col]
+            if article and description:
+                items.append({'article': str(article).strip(), 'description': str(description).strip(), 'qty': int(qty or 0)})
+        stock[label] = {'qty': sum(item['qty'] for item in items), 'items': items}
 
     current_month = '2026-09'
     product_lob_by_article = {}
@@ -351,6 +361,7 @@ def parse_dashboard():
         'currentMonth': current_month,
         'products': all_products,
         'roster': roster,
+        'stock': stock,
     }
 
     return summary
