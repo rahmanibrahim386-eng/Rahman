@@ -6,10 +6,19 @@ from pathlib import Path
 from openpyxl import load_workbook
 
 ROOT = Path(__file__).resolve().parent
-WORKBOOK = ROOT / 'extract' / 'M268 DATA DASHBOARD' / 'R Dashboard M268 EX.xlsx'
-BNPL_WORKBOOK = ROOT / 'extract' / 'M268 DATA DASHBOARD' / 'R DATA BNPL M268.xlsx'
-LOB_WORKBOOK = ROOT / 'extract' / 'M268 DATA DASHBOARD' / 'R LOB & Data Base M268 EX.xlsx'
-ROSTER_WORKBOOK = ROOT / 'extract' / 'M268 DATA DASHBOARD' / 'R Roster M268.xlsx'
+EXTRACT_ROOT = ROOT / 'extract' / 'M268 DATA DASHBOARD'
+ONEDRIVE_ROOT = ROOT.parents[2]
+
+
+def source_file(filename):
+    live_file = ONEDRIVE_ROOT / filename
+    return live_file if live_file.exists() else EXTRACT_ROOT / filename
+
+
+WORKBOOK = source_file('R Dashboard M268 EX.xlsx')
+BNPL_WORKBOOK = source_file('R DATA BNPL M268.xlsx')
+LOB_WORKBOOK = source_file('R LOB & Data Base M268 EX.xlsx')
+ROSTER_WORKBOOK = source_file('R Roster M268.xlsx')
 OUTPUT = ROOT / 'dashboard_data.js'
 
 INCENTIVE_PER_UNIT = {
