@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import calendar
+import re
 from datetime import datetime, timedelta
 from pathlib import Path
 
@@ -46,6 +47,7 @@ def parse_dashboard():
     rekap = wb['M268 REKAP']
     spw = wb['SPW']
     soh = wb['SOH']
+    msr = wb['MSR']
     bnpl_wb = load_workbook(BNPL_WORKBOOK, data_only=True, read_only=True)
     bnpl_ws = bnpl_wb['R DATA BNPL']
     lob_wb = load_workbook(LOB_WORKBOOK, data_only=True, read_only=True)
@@ -165,6 +167,8 @@ def parse_dashboard():
     daily_sales = {}
     daily_qoala = {}
     daily_provider = {}
+    daily_services = {}
+    sales_period_totals = {}
     service_totals = {}
     for row in spw.iter_rows(min_row=2, values_only=True):
         raw_date, raw_name, article, description, category, qty, amount, brand = row[0], row[2], row[4], row[5], row[6], row[7], row[8], row[9]
@@ -176,11 +180,13 @@ def parse_dashboard():
             raw_date_text = str(raw_date)
             parts = raw_date_text[:10].split('-')
             date_text = f'{parts[2]}-{parts[1]}-{parts[0]}' if len(parts) == 3 and len(parts[0]) == 2 else raw_date_text[:10]
-        if not date_text.startswith(current_month):
-            continue
         name = str(raw_name).strip()
         transaction_qty = int(qty or 0)
         transaction_amount = float(amount or 0)
+        month_key = date_text[:7]
+        sales_period_totals.setdefault(month_key, {'amount': 0, 'qty': 0})
+        sales_period_totals[month_key]['amount'] += transaction_amount
+        sales_period_totals[month_key]['qty'] += transaction_qty
         category_name = str(category or '').strip().upper()
         if category_name in ('PHONE', 'TABLETS', 'LAPTOPS', 'WATCH'):
             daily_category = 'device'
@@ -217,6 +223,12 @@ def parse_dashboard():
             daily_provider[date_text]['sales'].setdefault(name, {'qty': 0, 'amount': 0})
             daily_provider[date_text]['sales'][name]['qty'] += transaction_qty
             daily_provider[date_text]['sales'][name]['amount'] += transaction_amount
+            daily_services.setdefault(date_text, {})
+            daily_services[date_text].setdefault(brand_name.title(), {'qty': 0, 'amount': 0})
+            daily_services[date_text][brand_name.title()]['qty'] += transaction_qty
+            daily_services[date_text][brand_name.title()]['amount'] += transaction_amount
+        if month_key != current_month:
+            continue
         mapped_lob = product_lob_by_article.get(str(article).strip().upper())
         if brand_name == 'TELKOMSEL':
             vas_qty += int(qty or 0)
@@ -324,6 +336,17 @@ def parse_dashboard():
     current_period_amount = float(period_totals.get(current_month, {}).get('amount', 0))
     previous_period_amount = float(period_totals.get(previous_month, {}).get('amount', 0))
     growth_pct = ((current_period_amount - previous_period_amount) / previous_period_amount * 100) if previous_period_amount else 0
+    closing_target_store = float(target_row[3] or 0) / days_in_month
+    dashboard_target = str(ws.cell(4, 16).value or '')
+    dashboard_target_match = re.search(r'([\d.]+)', dashboard_target)
+    if dashboard_target_match:
+        closing_target_store = float(dashboard_target_match.group(1).replace('.', ''))
+    closing_target_sf = 65000000.0
+    for row in msr.iter_rows(min_row=1, max_row=8, values_only=True):
+        text = str(row[18] or '')
+        match = re.search(r'Target SF\s*:\s*([\d.]+)', text, re.IGNORECASE)
+        if match:
+            closing_target_sf = float(match.group(1).replace('.', ''))
 
     summary = {
         'title': 'M268 Executive Dashboard',
@@ -406,7 +429,11 @@ def parse_dashboard():
         'dailySales': daily_sales,
         'dailyQoala': daily_qoala,
         'dailyProvider': daily_provider,
+        'dailyServices': daily_services,
         'periodTotals': period_totals,
+        'salesPeriodTotals': sales_period_totals,
+        'closingTargetStore': closing_target_store,
+        'closingTargetSf': closing_target_sf,
         'currentMonth': current_month,
         'dailyTarget': float(target_row[3] or 0) / days_in_month,
         'products': all_products,

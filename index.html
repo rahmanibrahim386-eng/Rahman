@@ -698,40 +698,60 @@
           const salesTarget = selectedSale?.target || 0;
           const salesDailyTarget = salesTarget ? salesTarget / 30 : dailyTarget;
           const targetPct = dailyTarget ? (dateTotalSales / dailyTarget) * 100 : 0;
+          const closingStoreTarget = Number(data.closingTargetStore || dailyTarget);
+          const closingSfTarget = Number(data.closingTargetSf || 0);
+          const closingStorePct = closingStoreTarget ? (dateTotalSales / closingStoreTarget) * 100 : 0;
+          const closingSfPct = closingSfTarget ? (dateTotalSales / closingSfTarget) * 100 : 0;
           const mtdRevenue = rows.reduce((sum, sale) => sum + (sale.revenue || 0), 0);
           const mtdTarget = rows.reduce((sum, sale) => sum + (sale.target || 0), 0);
           const mtdPct = mtdTarget ? (mtdRevenue / mtdTarget) * 100 : 0;
           const totalProductAmount = selectedProducts.reduce((sum, product) => sum + product.amount, 0);
           const totalAccessories = Math.max(dateTotalSales - totalProductAmount, 0);
+          const dateServices = data.dailyServices?.[dateKey] || {};
+          const previousDate = new Date(`${dateKey}T00:00:00`);
+          previousDate.setDate(previousDate.getDate() - 7);
+          const salesLw = data.dailySales?.[previousDate.toISOString().slice(0, 10)]?.amount || 0;
+          const monthDate = new Date(`${dateKey}T00:00:00`);
+          monthDate.setMonth(monthDate.getMonth() - 1);
+          const salesLm = data.salesPeriodTotals?.[monthDate.toISOString().slice(0, 7)]?.amount || 0;
+          const yearDate = new Date(`${dateKey}T00:00:00`);
+          yearDate.setFullYear(yearDate.getFullYear() - 1);
+          const salesLy = data.salesPeriodTotals?.[yearDate.toISOString().slice(0, 7)]?.amount || 0;
+          const comparePct = value => closingStoreTarget ? ` (${(value / closingStoreTarget * 100).toFixed(0)}%)` : '';
           const lobRows = combinedLob.map(item => `<tr><td>${escapeHtml(item.lob)}</td><td>${item.value}</td></tr>`).join('');
           const topBottom = Object.entries(dateSalesMap)
             .sort(([, a], [, b]) => b.amount - a.amount)
             .map(([name, values]) => `<tr><td>${escapeHtml(name)}</td><td>${formatRp(values.amount)}</td></tr>`).join('');
           const reportRows = isTeamClosing
             ? [
-              ['Target Store', `${formatRp(dailyTarget)} (${targetPct.toFixed(0)}%)`],
-              ['Daily To Target', formatRp(Math.max(dailyTarget - dateTotalSales, 0))],
-              [`Total Sales ${closingDateLabel}`, `${formatRp(dateTotalSales)} (${targetPct.toFixed(0)}%)`],
+              ['Target Store', `${formatRp(closingStoreTarget)} (${closingStorePct.toFixed(0)}%)`],
+              ['Target SF', `${formatRp(closingSfTarget)} (${closingSfPct.toFixed(0)}%)`],
+              ['Total Sales', formatRp(dateTotalSales)],
               [`Total Product ${closingDateLabel}`, formatRp(totalProductAmount)],
-              [`Total Accessories ${closingDateLabel}`, `${formatRp(totalAccessories)} (${dailyTarget ? ((totalAccessories / dailyTarget) * 100).toFixed(1) : '0.0'}%)`],
-              [`Rate Accessories ${closingDateLabel}`, `${dailyTarget ? ((totalAccessories / dailyTarget) * 100).toFixed(1) : '0.0'}%`],
-              [`Total Qoala ${closingDateLabel}`, qoala],
-              [`Total Telkomsel ${closingDateLabel}`, provider],
-              [`Total Indosat ${closingDateLabel}`, ''],
-              [`Total XXL ${closingDateLabel}`, ''],
+              ['Total Accessories', formatRp(totalAccessories)],
+              ['Rate Accessories', `${dateTotalSales ? ((totalAccessories / dateTotalSales) * 100).toFixed(1) : '0.0'}%`],
+              ['Total Mac', combinedLob.find(item => item.lob === 'Mac')?.value || 0],
+              ['Total iPad', combinedLob.find(item => item.lob === 'iPad')?.value || 0],
+              ['Total iPhone', combinedLob.find(item => item.lob === 'iPhone')?.value || 0],
+              ['Total Apple Watch', combinedLob.find(item => item.lob === 'Apple Watch')?.value || 0],
+              ['Total AirPods', combinedLob.find(item => item.lob === 'AirPods')?.value || 0],
+              ['Total Qoala', data.dailyQoala?.[dateKey]?.amount ? formatRp(data.dailyQoala[dateKey].amount) : ''],
+              ['Total Telkomsel', dateServices.Telkomsel?.amount ? formatRp(dateServices.Telkomsel.amount) : ''],
+              ['Total Indosat', dateServices.Indosat?.amount ? formatRp(dateServices.Indosat.amount) : ''],
+              ['Total XXL', dateServices.Xxl?.amount ? formatRp(dateServices.Xxl.amount) : ''],
               ['MTD Sales', `${formatRp(mtdRevenue)} (${mtdPct.toFixed(0)}%)`],
-              ['Sales LW', ''],
-              ['Sales LM', ''],
-              ['Sales LY', ''],
+              ['Sales LW', `${formatRp(salesLw)}${comparePct(salesLw)}`],
+              ['Sales LM', `${formatRp(salesLm)}${comparePct(salesLm)}`],
+              ['Sales LY', `${formatRp(salesLy)}${comparePct(salesLy)}`],
             ]
             : [
               ['Target Store', `${formatRp(salesDailyTarget)} (${targetPct.toFixed(0)}%)`],
               ['Daily To Target', formatRp(Math.max(salesDailyTarget - dateTotalSales, 0))],
               [`Total Sales ${closingDateLabel}`, `${formatRp(dateTotalSales)} (${salesDailyTarget ? ((dateTotalSales / salesDailyTarget) * 100).toFixed(0) : '0'}%)`],
-              [`Total Product ${closingDateLabel}`, formatRp(totalProductAmount)],
-              [`Total Accessories ${closingDateLabel}`, formatRp(totalAccessories)],
-              [`Total Qoala ${closingDateLabel}`, qoala],
-              [`Total Provider ${closingDateLabel}`, provider],
+              ['Total Product', formatRp(totalProductAmount)],
+              ['Total Accessories', formatRp(totalAccessories)],
+              ['Total Qoala', formatRp(data.dailyQoala?.[dateKey]?.amount || 0)],
+              ['Total Provider', formatRp(data.dailyProvider?.[dateKey]?.amount || 0)],
               ['MTD Sales', `${formatRp(mtdRevenue)} (${mtdPct.toFixed(0)}%)`],
               ['*Unit Terjual*', ''],
               ['*Reason*', ''],
