@@ -271,6 +271,7 @@
       .closing-report .closing-sheet td { text-align: right; }
       .closing-report .closing-section { margin: 5px 0 2px; font-weight: 700; }
       .closing-report .copy-report { justify-self: start; border: 0; border-radius: 5px; padding: 7px 10px; background: #2f6fed; color: #fff; font-weight: 700; cursor: pointer; }
+      .closing-report .target-sf-input { width: 100%; max-width: 230px; padding: 7px 9px; border: 1px solid var(--line); border-radius: 6px; background: transparent; color: var(--text); font: inherit; }
       .closing-report .refresh-info { font-size: .7rem; margin-top: 2px; }
       .schedule-table th, .schedule-table td { min-width: 78px; text-align: center; white-space: nowrap; }
       .schedule-table th small { display: block; margin-top: 3px; color: var(--muted); font-size: .68rem; text-transform: none; }
@@ -725,10 +726,12 @@
           const topBottom = Object.entries(dateSalesMap)
             .sort(([, a], [, b]) => b.amount - a.amount)
             .map(([name, values]) => `<tr><td>${escapeHtml(name)}</td><td>${formatRp(values.amount)}</td></tr>`).join('');
+          const savedTargetSf = Number(localStorage.getItem('m268_closing_target_sf') || closingSfTarget);
+          const targetSfPct = savedTargetSf ? (dateTotalSales / savedTargetSf) * 100 : 0;
           const reportRows = isTeamClosing
             ? [
               ['Target Store', `${formatRp(closingStoreTarget)} (${closingStorePct.toFixed(0)}%)`],
-              ['Target SF', `${formatRp(closingSfTarget)} (${closingSfPct.toFixed(0)}%)`],
+              ['Target SF', `${formatRp(savedTargetSf)} (${targetSfPct.toFixed(0)}%)`],
               ['Total Sales', formatRp(dateTotalSales)],
               [`Total Product ${closingDateLabel}`, formatRp(totalProductAmount)],
               ['Total Accessories', formatRp(totalAccessories)],
@@ -774,7 +777,11 @@
             const button = document.getElementById('copy-closing-report');
             if (button) button.textContent = 'Tersalin';
           });
-          detailRoot.innerHTML = `<div class="sales-detail closing-report"><div class="sales-header"><h3>*M268 - Closing Report ${escapeHtml(closingDateLabel)}*</h3><span>Rahman · Closing Team</span></div><button type="button" class="copy-report" id="copy-closing-report">Salin Report</button><div class="closing-sheet"><table><tbody><tr><th>Store :</th><td>M268</td></tr><tr><th>Date :</th><td>${escapeHtml(closingDateLabel)}</td></tr><tr><th>Status :</th><td>${dateTotalSales ? 'Done' : 'Not Done'}</td></tr>${reportRows.map(([label, value]) => `<tr><th>${escapeHtml(label)} :</th><td>${escapeHtml(value)}</td></tr>`).join('')}</tbody></table><div class="closing-section">*Unit Terjual*</div><table><tbody>${combinedLob.map(item => `<tr><th>Total ${escapeHtml(item.lob)} :</th><td>${item.value}</td></tr>`).join('')}</tbody></table>${isTeamClosing ? `<div class="closing-section">*Top - Buttom Sales*</div><table><tbody>${topBottom || '<tr><td>Tidak ada transaksi pada tanggal ini.</td></tr>'}</tbody></table>` : ''}</div><div class="refresh-info">Format closing mengikuti file asli dan menampilkan nilai berdasarkan tanggal yang dipilih.</div></div>`;
+          detailRoot.innerHTML = `<div class="sales-detail closing-report"><div class="sales-header"><h3>*M268 - Closing Report ${escapeHtml(closingDateLabel)}*</h3><span>Rahman · Closing Team</span></div><label class="refresh-info" for="closing-target-sf">Target SF manual</label><input class="target-sf-input" id="closing-target-sf" type="number" min="0" step="1000" value="${savedTargetSf}" placeholder="Masukkan target SF"><button type="button" class="copy-report" id="copy-closing-report">Salin Report</button><div class="closing-sheet"><table><tbody><tr><th>Store :</th><td>M268</td></tr><tr><th>Date :</th><td>${escapeHtml(closingDateLabel)}</td></tr><tr><th>Status :</th><td>${dateTotalSales ? 'Done' : 'Not Done'}</td></tr>${reportRows.map(([label, value]) => `<tr><th>${escapeHtml(label)} :</th><td>${escapeHtml(value)}</td></tr>`).join('')}</tbody></table><div class="closing-section">*Unit Terjual*</div><table><tbody>${combinedLob.map(item => `<tr><th>Total ${escapeHtml(item.lob)} :</th><td>${item.value}</td></tr>`).join('')}</tbody></table>${isTeamClosing ? `<div class="closing-section">*Top - Buttom Sales*</div><table><tbody>${topBottom || '<tr><td>Tidak ada transaksi pada tanggal ini.</td></tr>'}</tbody></table>` : ''}</div><div class="refresh-info">Format closing mengikuti file asli dan menampilkan nilai berdasarkan tanggal yang dipilih.</div></div>`;
+          document.getElementById('closing-target-sf').addEventListener('change', event => {
+            localStorage.setItem('m268_closing_target_sf', String(Math.max(Number(event.target.value) || 0, 0)));
+            renderSalesDetail(searchInput.value);
+          });
           document.getElementById('copy-closing-report').addEventListener('click', copyReport);
           return;
         }
