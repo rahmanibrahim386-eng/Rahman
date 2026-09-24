@@ -264,9 +264,9 @@
       .closing-report .sales-header { border-bottom: 1px solid #111; padding-bottom: 4px; }
       .closing-report .sales-header h3 { font-family: Arial, sans-serif; font-size: .78rem; color: #111; }
       .closing-report .sales-header span { font-size: .7rem; color: #333; }
-      .closing-report .closing-sheet { background: #fff; color: #111; border: 2px solid #111; padding: 5px 7px; font: 10px/1.18 Arial, sans-serif; white-space: pre-wrap; overflow-wrap: anywhere; }
+      .closing-report .closing-sheet { background: transparent; color: var(--text); border: 1px solid var(--line); padding: 5px 7px; font: 10px/1.18 Arial, sans-serif; white-space: pre-wrap; overflow-wrap: anywhere; }
       .closing-report .closing-sheet table { width: 100%; border-collapse: collapse; }
-      .closing-report .closing-sheet th, .closing-report .closing-sheet td { padding: 1px 0; border: 0; color: #111; font: inherit; text-align: left; vertical-align: top; }
+      .closing-report .closing-sheet th, .closing-report .closing-sheet td { padding: 1px 0; border: 0; color: inherit; font: inherit; text-align: left; vertical-align: top; }
       .closing-report .closing-sheet th { width: 58%; font-weight: 400; }
       .closing-report .closing-sheet td { text-align: right; }
       .closing-report .closing-section { margin: 5px 0 2px; font-weight: 700; }
@@ -559,7 +559,11 @@
         const matches = data.sales.filter(sale => nameQuery && sale.name.toLowerCase().includes(nameQuery));
         const hasNonSalesFilter = selectedUnit || periodKey || dateKey || isBnplFilter || isClosingReport || normalized === 'rahman';
         if (isClosingReport && (!nameQuery || !dateKey)) {
-          detailRoot.innerHTML = '<div class="detail-empty">Report Closing memerlukan nama sales dan tanggal. Contoh: ketik “closing Virginia”, lalu pilih tanggal closing pada kalender.</div>';
+          detailRoot.innerHTML = '<div class="detail-empty">Report Closing Rahman memerlukan kata kunci Rahman dan tanggal. Contoh: ketik “Rahman closing”, lalu pilih tanggal closing pada kalender.</div>';
+          return;
+        }
+        if (isClosingReport && !nameQuery.includes('rahman')) {
+          detailRoot.innerHTML = '<div class="detail-empty">Report Closing hanya tersedia untuk Rahman. Gunakan kata kunci “Rahman closing” dan pilih tanggal.</div>';
           return;
         }
         if (!matches.length && !hasNonSalesFilter) {
@@ -708,15 +712,14 @@
           const totalProductAmount = selectedProducts.reduce((sum, product) => sum + product.amount, 0);
           const totalAccessories = Math.max(dateTotalSales - totalProductAmount, 0);
           const dateServices = data.dailyServices?.[dateKey] || {};
-          const previousDate = new Date(`${dateKey}T00:00:00`);
-          previousDate.setDate(previousDate.getDate() - 7);
-          const salesLw = data.dailySales?.[previousDate.toISOString().slice(0, 10)]?.amount || 0;
-          const monthDate = new Date(`${dateKey}T00:00:00`);
-          monthDate.setMonth(monthDate.getMonth() - 1);
-          const salesLm = data.salesPeriodTotals?.[monthDate.toISOString().slice(0, 7)]?.amount || 0;
-          const yearDate = new Date(`${dateKey}T00:00:00`);
-          yearDate.setFullYear(yearDate.getFullYear() - 1);
-          const salesLy = data.salesPeriodTotals?.[yearDate.toISOString().slice(0, 7)]?.amount || 0;
+          const comparisonDate = (yearOffset, monthOffset, dayOffset) => {
+            const [year, month, day] = dateKey.split('-').map(Number);
+            const value = new Date(year + yearOffset, month - 1 + monthOffset, day + dayOffset);
+            return `${value.getFullYear()}-${String(value.getMonth() + 1).padStart(2, '0')}-${String(value.getDate()).padStart(2, '0')}`;
+          };
+          const salesLw = data.dailySales?.[comparisonDate(0, 0, -7)]?.amount || 0;
+          const salesLm = data.dailySales?.[comparisonDate(0, -1, 0)]?.amount || 0;
+          const salesLy = data.dailySales?.[comparisonDate(-1, 0, 0)]?.amount || 0;
           const comparePct = value => closingStoreTarget ? ` (${(value / closingStoreTarget * 100).toFixed(0)}%)` : '';
           const lobRows = combinedLob.map(item => `<tr><td>${escapeHtml(item.lob)}</td><td>${item.value}</td></tr>`).join('');
           const topBottom = Object.entries(dateSalesMap)
@@ -771,7 +774,7 @@
             const button = document.getElementById('copy-closing-report');
             if (button) button.textContent = 'Tersalin';
           });
-          detailRoot.innerHTML = `<div class="sales-detail closing-report"><div class="sales-header"><h3>*M268 - Closing Report ${escapeHtml(closingDateLabel)}*</h3><span>${isTeamClosing ? 'Closing Team' : `${escapeHtml(selectedSale?.name || nameQuery)}`}</span></div><button type="button" class="copy-report" id="copy-closing-report">Salin Report</button><div class="closing-sheet"><table><tbody><tr><th>Store</th><td>M268</td></tr><tr><th>Date</th><td>${escapeHtml(closingDateLabel)}</td></tr><tr><th>Status</th><td>${dateTotalSales ? 'Done' : 'Not Done'}</td></tr>${reportRows.map(([label, value]) => `<tr><th>${escapeHtml(label)}</th><td>${escapeHtml(value)}</td></tr>`).join('')}</tbody></table><div class="closing-section">*Unit Terjual*</div><table><tbody>${combinedLob.map(item => `<tr><th>Total ${escapeHtml(item.lob)}</th><td>${item.value}</td></tr>`).join('')}</tbody></table>${isTeamClosing ? `<div class="closing-section">*Top - Buttom Sales*</div><table><tbody>${topBottom || '<tr><td>Tidak ada transaksi pada tanggal ini.</td></tr>'}</tbody></table>` : ''}</div><div class="refresh-info">Format closing mengikuti file asli dan difilter berdasarkan ${isTeamClosing ? 'seluruh team' : 'nama sales'} serta tanggal yang dipilih.</div></div>`;
+          detailRoot.innerHTML = `<div class="sales-detail closing-report"><div class="sales-header"><h3>*M268 - Closing Report ${escapeHtml(closingDateLabel)}*</h3><span>Rahman · Closing Team</span></div><button type="button" class="copy-report" id="copy-closing-report">Salin Report</button><div class="closing-sheet"><table><tbody><tr><th>Store :</th><td>M268</td></tr><tr><th>Date :</th><td>${escapeHtml(closingDateLabel)}</td></tr><tr><th>Status :</th><td>${dateTotalSales ? 'Done' : 'Not Done'}</td></tr>${reportRows.map(([label, value]) => `<tr><th>${escapeHtml(label)} :</th><td>${escapeHtml(value)}</td></tr>`).join('')}</tbody></table><div class="closing-section">*Unit Terjual*</div><table><tbody>${combinedLob.map(item => `<tr><th>Total ${escapeHtml(item.lob)} :</th><td>${item.value}</td></tr>`).join('')}</tbody></table>${isTeamClosing ? `<div class="closing-section">*Top - Buttom Sales*</div><table><tbody>${topBottom || '<tr><td>Tidak ada transaksi pada tanggal ini.</td></tr>'}</tbody></table>` : ''}</div><div class="refresh-info">Format closing mengikuti file asli dan menampilkan nilai berdasarkan tanggal yang dipilih.</div></div>`;
           document.getElementById('copy-closing-report').addEventListener('click', copyReport);
           return;
         }
