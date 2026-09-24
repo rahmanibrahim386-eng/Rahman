@@ -50,6 +50,7 @@ def parse_dashboard():
     lob_master = lob_wb['Master']
     roster_wb = load_workbook(ROSTER_WORKBOOK, data_only=True, read_only=True)
     roster_master = roster_wb['MASTER MPP M268']
+    roster_schedule = roster_wb['ROSTER']
     rekap_rows = list(rekap.iter_rows(min_row=5, max_row=15, values_only=True))
     target_row = rekap_rows[1]
     achievement_row = rekap_rows[2]
@@ -116,6 +117,25 @@ def parse_dashboard():
             'position': str(position).strip() if position else '',
             'joinDate': join_date.strftime('%Y-%m-%d') if hasattr(join_date, 'strftime') else str(join_date or ''),
         })
+    shift_names = {'D047': 'Morning', 'D103': 'Afternoon', 'D083': 'Middle', 'OFF': 'OFF', 'X&C': 'Leave'}
+    schedule_dates = []
+    schedule_header = list(roster_schedule.iter_rows(min_row=6, max_row=6, values_only=True))[0]
+    for index, value in enumerate(schedule_header):
+        if index >= 6 and hasattr(value, 'strftime'):
+            schedule_dates.append((index, value.strftime('%Y-%m-%d')))
+    schedule_by_name = {}
+    for row in roster_schedule.iter_rows(min_row=8, values_only=True):
+        name = row[2] if len(row) > 2 else None
+        if not name:
+            continue
+        entries = []
+        for index, date_text in schedule_dates:
+            code = str(row[index] or '').strip().upper()
+            if code:
+                entries.append({'date': date_text, 'code': code, 'label': shift_names.get(code, code)})
+        schedule_by_name[str(name).strip().casefold()] = entries
+    for member in roster:
+        member['schedule'] = schedule_by_name.get(member['name'].casefold(), [])
     all_products = []
     accessory_qty = 0
     vas_qty = 0
