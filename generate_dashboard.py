@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from datetime import datetime
 from pathlib import Path
 
 from openpyxl import load_workbook
@@ -58,6 +59,7 @@ def parse_dashboard():
     achievement_row = rekap_rows[2]
     total_device_row = rekap_rows[10]
     stock_columns = {'iPhone': (2, 4, 3, 5), 'iPad': (9, 11, 10, 12), 'Mac': (16, 18, 17, 19), 'Apple Watch': (23, 25, 24, 26)}
+    stock_updated_at = datetime.fromtimestamp(WORKBOOK.stat().st_mtime).astimezone().isoformat()
     stock = {}
     for label, (article_col, qty_col, description_col, price_col) in stock_columns.items():
         items = []
@@ -398,6 +400,7 @@ def parse_dashboard():
         'products': all_products,
         'roster': roster,
         'stock': stock,
+        'stockUpdatedAt': stock_updated_at,
         'database': database,
     }
 
