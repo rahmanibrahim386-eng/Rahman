@@ -418,18 +418,26 @@
       }
 
       function renderSalesDetail(query) {
-        const normalized = query.trim().toLowerCase();
+        const normalized = query.trim().toLowerCase()
+          .replace(/[\/_-]+/g, ' ')
+          .replace(/\s+/g, ' ');
         const dateKey = dateFilter.value;
-        const bnplProviders = ['kredivo', 'akulaku', 'shopeepay', 'shopeepay later', 'hci'];
-        const selectedBnplProvider = bnplProviders.find(provider => normalized.includes(provider));
+        const bnplProviders = [
+          ['kredivo', 'kredivo'],
+          ['akulaku', 'akulaku'],
+          ['shopeepay', 'shopeepay'],
+          ['shopee pay later', 'shopeepay'],
+          ['hci', 'hci']
+        ];
+        const selectedBnplProvider = bnplProviders.find(([keyword]) => normalized.includes(keyword))?.[1];
         const isMadingFilter = normalized.includes('mading');
-        const isRosterFilter = normalized.includes('roster') || normalized.includes('team');
-        const unitMap = { iphone: 'iPhone', ipad: 'iPad', mac: 'Mac', desktop: 'Mac', watch: 'Apple Watch', airpods: 'AirPods' };
+        const isRosterFilter = normalized.includes('roster');
+        const unitMap = { iphone: 'iPhone', ipad: 'iPad', mac: 'Mac', desktop: 'Mac', laptop: 'Mac', watch: 'Apple Watch', airpods: 'AirPods' };
         const selectedUnit = Object.keys(unitMap).find(key => normalized.includes(key));
         const isBnplFilter = normalized.includes('bnpl') || Boolean(selectedBnplProvider);
         const periodKey = normalized.includes('ly') ? 'LY' : normalized.includes('lm') ? 'LM' : normalized.includes('cm') || normalized.includes('m268') ? 'CM' : '';
         const nameQuery = normalized
-          .replace(/\b(iphone|ipad|mac|desktop|watch|airpods|m268|cm|lm|ly|bnpl|kredivo|akulaku|hci|shopeepay|later)\b/g, '')
+          .replace(/\b(sales|staff|team|provider|unit|detail|iphone|ipad|mac|desktop|laptop|watch|apple|airpods|m268|cm|lm|ly|bnpl|kredivo|akulaku|hci|shopeepay|later|qoala|telkomsel|indosat|xl|xxl)\b/g, '')
           .trim();
         if (isRosterFilter) {
           detailRoot.innerHTML = `
@@ -437,6 +445,17 @@
               <div class="sales-header"><h3>Roster Team</h3><span>${data.roster.length} anggota</span></div>
               <table class="product-table"><thead><tr><th>Nama</th><th>Posisi</th><th>NIK</th><th>Join Date</th></tr></thead>
               <tbody>${data.roster.map(member => `<tr><td>${escapeHtml(member.name)}</td><td>${escapeHtml(member.position)}</td><td>${escapeHtml(member.nik)}</td><td>${escapeHtml(member.joinDate)}</td></tr>`).join('')}</tbody></table>
+            </div>`;
+          return;
+        }
+        const serviceKeywords = ['qoala', 'telkomsel', 'indosat', 'xl', 'xxl'];
+        const selectedService = serviceKeywords.find(service => normalized.includes(service));
+        if (selectedService && !nameQuery) {
+          const serviceRows = data.mading.services.filter(item => item.label.toLowerCase().includes(selectedService));
+          detailRoot.innerHTML = `
+            <div class="sales-detail">
+              <div class="sales-header"><h3>${selectedService.toUpperCase()}</h3><span>Ringkasan layanan</span></div>
+              ${serviceRows.length ? `<table class="product-table"><thead><tr><th>Layanan</th><th>Qty</th><th>Total Harga</th></tr></thead><tbody>${serviceRows.map(item => `<tr><td>${escapeHtml(item.label)}</td><td>${item.qty}</td><td>${formatRp(item.amount)}</td></tr>`).join('')}</tbody></table>` : '<div class="detail-empty">Tidak ada data layanan untuk kata kunci ini.</div>'}
             </div>`;
           return;
         }
@@ -477,7 +496,7 @@
         const daily = dateKey ? data.dailyBnpl[dateKey] : null;
         const monthly = data.periodTotals[period] || { amount: 0, qty: 0 };
         const providerRows = selectedBnplProvider
-          ? data.bnpl.filter(item => item.label.toLowerCase().includes(selectedBnplProvider))
+          ? data.bnpl.filter(item => item.label.toLowerCase().replace(/\s+/g, '').includes(selectedBnplProvider.replace(/\s+/g, '')))
           : data.bnpl;
         if (isBnplFilter && !nameQuery && !dateKey) {
           const providerText = selectedBnplProvider ? `Provider ${providerRows.map(item => item.label).join(', ')}` : 'Semua provider BNPL';
@@ -637,7 +656,11 @@
       searchInput.addEventListener('input', event => renderSalesDetail(event.target.value));
       dateFilter.addEventListener('change', () => renderSalesDetail(searchInput.value));
       document.querySelectorAll('[data-filter]').forEach(button => button.addEventListener('click', () => {
-        searchInput.value = button.dataset.filter;
+        const filter = button.dataset.filter;
+        if (filter !== 'M268' && filter !== 'CM' && filter !== 'LM' && filter !== 'LY') {
+          dateFilter.value = '';
+        }
+        searchInput.value = filter;
         renderSalesDetail(searchInput.value);
       }));
       refreshData();
