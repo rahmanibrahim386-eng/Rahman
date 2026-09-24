@@ -176,12 +176,14 @@ def parse_dashboard():
         match = re.search(r'Total For\s+(\d{2}-\d{2}-\d{4})', label, re.IGNORECASE)
         if match:
             day, month, year = match.group(1).split('-')
-            historical_last_month[f'{year}-{month}-{day}'] = float(row[41] or 0)
+            date_key = f'{year}-{month}-{day}'
+            historical_last_month[date_key] = historical_last_month.get(date_key, 0) + float(row[41] or 0)
         label = str(row[0] or '')
         match = re.search(r'Total For\s+(\d{2}-\d{2}-\d{4})', label, re.IGNORECASE)
         if match:
             day, month, year = match.group(1).split('-')
-            historical_last_year[f'{year}-{month}-{day}'] = float(row[3] or 0)
+            date_key = f'{year}-{month}-{day}'
+            historical_last_year[date_key] = historical_last_year.get(date_key, 0) + float(row[3] or 0)
     service_totals = {}
     for row in spw.iter_rows(min_row=2, values_only=True):
         raw_date, raw_name, article, description, category, qty, amount, brand = row[0], row[2], row[4], row[5], row[6], row[7], row[8], row[9]
