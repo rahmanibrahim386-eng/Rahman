@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 import json
-from datetime import datetime
+import calendar
+from datetime import datetime, timedelta
 from pathlib import Path
 
 from openpyxl import load_workbook
@@ -70,7 +71,12 @@ def parse_dashboard():
                 items.append({'article': str(article).strip(), 'description': str(description).strip(), 'qty': int(qty or 0), 'price': unit_price})
         stock[label] = {'qty': sum(item['qty'] for item in items), 'amount': sum(item['qty'] * item['price'] for item in items), 'items': items}
 
-    current_month = '2026-09'
+    today = datetime.now().astimezone().date()
+    current_month = today.strftime('%Y-%m')
+    days_in_month = calendar.monthrange(today.year, today.month)[1]
+    days_elapsed = today.day
+    days_remaining = max(days_in_month - days_elapsed, 0)
+    time_gone_pct = (days_elapsed / days_in_month) * 100
     product_lob_by_article = {}
     for row in lob_master.iter_rows(min_row=2, values_only=True):
         article, description, lob = row[0], row[1], row[2]
@@ -313,6 +319,11 @@ def parse_dashboard():
     service_totals['Qoala'] = {'qty': int(total_device_row[22] or 0), 'amount': float(achievement_row[7] or 0)}
     for label in ('Indosat', 'XXL'):
         service_totals.setdefault(label, {'qty': 0, 'amount': 0})
+    previous_month_date = today.replace(day=1) - timedelta(days=1)
+    previous_month = previous_month_date.strftime('%Y-%m')
+    current_period_amount = float(period_totals.get(current_month, {}).get('amount', 0))
+    previous_period_amount = float(period_totals.get(previous_month, {}).get('amount', 0))
+    growth_pct = ((current_period_amount - previous_period_amount) / previous_period_amount * 100) if previous_period_amount else 0
 
     summary = {
         'title': 'M268 Executive Dashboard',
@@ -320,8 +331,8 @@ def parse_dashboard():
         'metrics': [
             {
                 'label': 'Total Achievement',
-                'value': 'Rp 2.719.574.700',
-                'detail': 'EST: Rp 3.547.271.348 (109%)',
+                'value': to_rp(achievement_row[3]),
+                'detail': f'Target: {to_rp(target_row[3])} ({(float(achievement_row[3] or 0) / float(target_row[3] or 1) * 100):.1f}%)',
                 'accent': '#2f6fed'
             },
             {
@@ -332,25 +343,25 @@ def parse_dashboard():
             },
             {
                 'label': 'Growth Trend',
-                'value': '+134%',
-                'detail': 'Month-over-month growth',
+                'value': f'{growth_pct:+.1f}%',
+                'detail': f'{current_month} vs {previous_month}',
                 'accent': '#16a34a'
             },
             {
                 'label': 'Time Gone / Sisa Hari',
-                'value': '73% (8 Hari Sisa)',
-                'detail': 'Execution pace',
+                'value': f'{time_gone_pct:.0f}% ({days_remaining} Hari Sisa)',
+                'detail': f'{days_elapsed} dari {days_in_month} hari kalender',
                 'accent': '#f59e0b'
             },
             {
                 'label': 'Tim Sales',
-                'value': '5 Staff',
+                'value': f'{len(sales)} Staff',
                 'detail': 'Current sales team',
                 'accent': '#ec4899'
             },
             {
                 'label': 'Daily Target',
-                'value': 'Rp 58.936.144',
+                'value': to_rp(float(target_row[3] or 0) / days_in_month),
                 'detail': 'Store daily target',
                 'accent': '#8b5cf6'
             },
