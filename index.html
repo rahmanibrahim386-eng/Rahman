@@ -260,6 +260,18 @@
       .product-table td:nth-child(2), .product-table th:nth-child(2) { text-align: right; }
       .schedule-table-wrap { overflow-x: auto; max-width: 100%; border: 1px solid var(--line); border-radius: 12px; }
       .schedule-table { min-width: 1500px; margin: 0; }
+      .closing-report { gap: 6px; max-width: 430px; }
+      .closing-report .sales-header { border-bottom: 1px solid #111; padding-bottom: 4px; }
+      .closing-report .sales-header h3 { font-family: Arial, sans-serif; font-size: .78rem; color: #111; }
+      .closing-report .sales-header span { font-size: .7rem; color: #333; }
+      .closing-report .closing-sheet { background: #fff; color: #111; border: 2px solid #111; padding: 5px 7px; font: 10px/1.18 Arial, sans-serif; white-space: pre-wrap; overflow-wrap: anywhere; }
+      .closing-report .closing-sheet table { width: 100%; border-collapse: collapse; }
+      .closing-report .closing-sheet th, .closing-report .closing-sheet td { padding: 1px 0; border: 0; color: #111; font: inherit; text-align: left; vertical-align: top; }
+      .closing-report .closing-sheet th { width: 58%; font-weight: 400; }
+      .closing-report .closing-sheet td { text-align: right; }
+      .closing-report .closing-section { margin: 5px 0 2px; font-weight: 700; }
+      .closing-report .copy-report { justify-self: start; border: 0; border-radius: 5px; padding: 7px 10px; background: #2f6fed; color: #fff; font-weight: 700; cursor: pointer; }
+      .closing-report .refresh-info { font-size: .7rem; margin-top: 2px; }
       .schedule-table th, .schedule-table td { min-width: 78px; text-align: center; white-space: nowrap; }
       .schedule-table th small { display: block; margin-top: 3px; color: var(--muted); font-size: .68rem; text-transform: none; }
       .schedule-table .schedule-sticky { position: sticky; left: 0; z-index: 2; min-width: 150px; text-align: left; background: #18243a; box-shadow: 8px 0 12px rgba(0,0,0,.18); }
@@ -724,7 +736,23 @@
               ['*Unit Terjual*', ''],
               ['*Reason*', ''],
             ];
-          detailRoot.innerHTML = `<div class="sales-detail"><div class="sales-header"><h3>*M268 - Closing Report ${escapeHtml(closingDateLabel)}*</h3><span>${isTeamClosing ? 'Closing Team' : `${escapeHtml(selectedSale?.name || nameQuery)}`}</span></div><table class="product-table"><tbody><tr><th>Store</th><td>M268</td></tr><tr><th>Date</th><td>${escapeHtml(closingDateLabel)}</td></tr><tr><th>Status</th><td>${dateTotalSales ? 'Done' : 'Not Done'}</td></tr>${reportRows.map(([label, value]) => `<tr><th>${escapeHtml(label)}</th><td>${escapeHtml(value)}</td></tr>`).join('')}</tbody></table><h3>Unit Terjual</h3><table class="product-table"><tbody>${lobRows}</tbody></table>${isTeamClosing ? `<h3>*Top - Buttom Sales*</h3><table class="product-table"><tbody>${topBottom || '<tr><td>Tidak ada transaksi pada tanggal ini.</td></tr>'}</tbody></table>` : ''}<div class="refresh-info">Format closing mengikuti file asli dan difilter berdasarkan ${isTeamClosing ? 'seluruh team' : 'nama sales'} serta tanggal yang dipilih.</div></div>`;
+          const reportText = [
+            `*M268 - Closing Report ${closingDateLabel}*`,
+            `Store : M268`,
+            `Date : ${closingDateLabel}`,
+            `Status : ${dateTotalSales ? 'Done' : 'Not Done'}`,
+            ...reportRows.map(([label, value]) => `${label} : ${value}`),
+            '',
+            '*Unit Terjual*',
+            ...combinedLob.map(item => `Total ${item.lob} : ${item.value}`),
+            ...(isTeamClosing ? ['', '*Top - Buttom Sales*', ...Object.entries(dateSalesMap).sort(([, a], [, b]) => b.amount - a.amount).map(([name, values]) => `${name} : ${formatRp(values.amount)}`)] : []),
+          ].join('\n');
+          const copyReport = () => navigator.clipboard?.writeText(reportText).then(() => {
+            const button = document.getElementById('copy-closing-report');
+            if (button) button.textContent = 'Tersalin';
+          });
+          detailRoot.innerHTML = `<div class="sales-detail closing-report"><div class="sales-header"><h3>*M268 - Closing Report ${escapeHtml(closingDateLabel)}*</h3><span>${isTeamClosing ? 'Closing Team' : `${escapeHtml(selectedSale?.name || nameQuery)}`}</span></div><button type="button" class="copy-report" id="copy-closing-report">Salin Report</button><div class="closing-sheet"><table><tbody><tr><th>Store</th><td>M268</td></tr><tr><th>Date</th><td>${escapeHtml(closingDateLabel)}</td></tr><tr><th>Status</th><td>${dateTotalSales ? 'Done' : 'Not Done'}</td></tr>${reportRows.map(([label, value]) => `<tr><th>${escapeHtml(label)}</th><td>${escapeHtml(value)}</td></tr>`).join('')}</tbody></table><div class="closing-section">*Unit Terjual*</div><table><tbody>${combinedLob.map(item => `<tr><th>Total ${escapeHtml(item.lob)}</th><td>${item.value}</td></tr>`).join('')}</tbody></table>${isTeamClosing ? `<div class="closing-section">*Top - Buttom Sales*</div><table><tbody>${topBottom || '<tr><td>Tidak ada transaksi pada tanggal ini.</td></tr>'}</tbody></table>` : ''}</div><div class="refresh-info">Format closing mengikuti file asli dan difilter berdasarkan ${isTeamClosing ? 'seluruh team' : 'nama sales'} serta tanggal yang dipilih.</div></div>`;
+          document.getElementById('copy-closing-report').addEventListener('click', copyReport);
           return;
         }
         const title = dateKey
