@@ -245,6 +245,16 @@
       .product-table th { color: var(--muted); font-size: .72rem; text-transform: uppercase; letter-spacing: .06em; }
       .product-table td:last-child, .product-table th:last-child { text-align: right; }
       .product-table td:nth-child(2), .product-table th:nth-child(2) { text-align: right; }
+      .schedule-table-wrap { overflow-x: auto; max-width: 100%; border: 1px solid var(--line); border-radius: 12px; }
+      .schedule-table { min-width: 1500px; margin: 0; }
+      .schedule-table th, .schedule-table td { min-width: 78px; text-align: center; white-space: nowrap; }
+      .schedule-table th small { display: block; margin-top: 3px; color: var(--muted); font-size: .68rem; text-transform: none; }
+      .schedule-table .schedule-sticky { position: sticky; left: 0; z-index: 2; min-width: 150px; text-align: left; background: var(--card); }
+      .schedule-table thead .schedule-sticky { z-index: 3; }
+      .schedule-table td.shift-morning { color: #86efac; }
+      .schedule-table td.shift-afternoon { color: #93c5fd; }
+      .schedule-table td.shift-middle { color: #fcd34d; }
+      .schedule-table td.shift-off, .schedule-table td.shift-leave { color: var(--muted); }
 
       @media (max-width: 980px) {
         .metrics-grid {
@@ -449,8 +459,8 @@
           detailRoot.innerHTML = `
             <div class="sales-detail">
               <div class="sales-header"><h3>Roster Team</h3><span>${data.roster.length} anggota</span></div>
-              <table class="product-table"><thead><tr><th>Nama</th><th>Posisi</th><th>NIK</th><th>Join Date</th><th>Jadwal September</th></tr></thead>
-              <tbody>${data.roster.map(member => `<tr><td>${escapeHtml(member.name)}</td><td>${escapeHtml(member.position)}</td><td>${escapeHtml(member.nik)}</td><td>${escapeHtml(member.joinDate)}</td><td>${member.schedule?.length ? member.schedule.map(item => `${item.date.slice(8)}: ${escapeHtml(item.label)}`).join(' · ') : '-'}</td></tr>`).join('')}</tbody></table>
+              <div class="schedule-table-wrap"><table class="product-table schedule-table"><thead><tr><th class="schedule-sticky">Nama</th><th>Posisi</th>${(data.roster[0]?.schedule || []).map(item => `<th>${item.date.slice(8)}<small>${new Date(`${item.date}T00:00:00`).toLocaleDateString('id-ID', { weekday: 'short' })}</small></th>`).join('')}</tr></thead>
+              <tbody>${data.roster.map(member => `<tr><td class="schedule-sticky">${escapeHtml(member.name)}</td><td>${escapeHtml(member.position)}</td>${(member.schedule || []).map(item => `<td class="shift-${item.code.replace(/[^A-Z]/g, '').toLowerCase()}">${escapeHtml(item.label)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>
               <div class="refresh-info">Kode jadwal: Morning (D047) · Afternoon (D103) · Middle (D083) · OFF · Leave (X&amp;C).</div>
             </div>`;
           return;
