@@ -171,7 +171,14 @@ def parse_dashboard():
     sales_period_totals = {}
     historical_last_month = {}
     historical_last_year = {}
+    msr_closing_summary = {}
     for row in msr.iter_rows(values_only=True):
+        summary_text = str(row[18] or '')
+        for key, prefix in (('mtd', 'MTD Sales'), ('lw', 'Sales LW'), ('lm', 'Sales LM'), ('ly', 'Sales LY')):
+            if summary_text.startswith(prefix):
+                match = re.search(r':\s*([\d.]+)', summary_text)
+                if match:
+                    msr_closing_summary[key] = float(match.group(1).replace('.', ''))
         label = str(row[38] or '')
         match = re.search(r'Total For\s+(\d{2}-\d{2}-\d{4})', label, re.IGNORECASE)
         if match:
@@ -449,6 +456,7 @@ def parse_dashboard():
         'salesPeriodTotals': sales_period_totals,
         'historicalLastMonth': historical_last_month,
         'historicalLastYear': historical_last_year,
+        'msrClosingSummary': msr_closing_summary,
         'closingTargetStore': closing_target_store,
         'closingTargetSf': closing_target_sf,
         'currentMonth': current_month,

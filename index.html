@@ -324,7 +324,7 @@
         </div>
         <div class="quick-filters">
           <button type="button" data-filter="M268">M268</button>
-          <button type="button" data-filter="closing M268">Report Closing</button>
+          <button type="button" data-filter="closing rahman">Report Closing Rahman</button>
           <button type="button" data-filter="stock iphone">Stock iPhone</button>
           <button type="button" data-filter="stock mac">Stock Mac</button>
           <button type="button" data-filter="stock watch">Stock Watch</button>
@@ -559,12 +559,12 @@
         }
         const matches = data.sales.filter(sale => nameQuery && sale.name.toLowerCase().includes(nameQuery));
         const hasNonSalesFilter = selectedUnit || periodKey || dateKey || isBnplFilter || isClosingReport || normalized === 'rahman';
-        if (isClosingReport && (!nameQuery || !dateKey)) {
-          detailRoot.innerHTML = '<div class="detail-empty">Report Closing Rahman memerlukan kata kunci Rahman dan tanggal. Contoh: ketik “Rahman closing”, lalu pilih tanggal closing pada kalender.</div>';
+        if (isClosingReport && !dateKey) {
+          detailRoot.innerHTML = '<div class="detail-empty">Report Closing Rahman memerlukan tanggal. Pilih tanggal closing pada kalender.</div>';
           return;
         }
-        if (isClosingReport && !nameQuery.includes('rahman')) {
-          detailRoot.innerHTML = '<div class="detail-empty">Report Closing hanya tersedia untuk Rahman. Gunakan kata kunci “Rahman closing” dan pilih tanggal.</div>';
+        if (isClosingReport && nameQuery && !nameQuery.includes('rahman')) {
+          detailRoot.innerHTML = '<div class="detail-empty">Report Closing hanya tersedia untuk Rahman. Gunakan kata kunci “closing” atau “Rahman closing”.</div>';
           return;
         }
         if (!matches.length && !hasNonSalesFilter) {
@@ -707,7 +707,7 @@
           const closingSfTarget = Number(data.closingTargetSf || 0);
           const closingStorePct = closingStoreTarget ? (dateTotalSales / closingStoreTarget) * 100 : 0;
           const closingSfPct = closingSfTarget ? (dateTotalSales / closingSfTarget) * 100 : 0;
-          const mtdRevenue = rows.reduce((sum, sale) => sum + (sale.revenue || 0), 0);
+          const mtdRevenue = Number(data.msrClosingSummary?.mtd || rows.reduce((sum, sale) => sum + (sale.revenue || 0), 0));
           const mtdTarget = rows.reduce((sum, sale) => sum + (sale.target || 0), 0);
           const mtdPct = mtdTarget ? (mtdRevenue / mtdTarget) * 100 : 0;
           const totalProductAmount = selectedProducts.reduce((sum, product) => sum + product.amount, 0);
@@ -718,9 +718,9 @@
             const value = new Date(year + yearOffset, month - 1 + monthOffset, day + dayOffset);
             return `${value.getFullYear()}-${String(value.getMonth() + 1).padStart(2, '0')}-${String(value.getDate()).padStart(2, '0')}`;
           };
-          const salesLw = data.dailySales?.[comparisonDate(0, 0, -7)]?.amount || 0;
-          const salesLm = data.historicalLastMonth?.[comparisonDate(0, -1, 0)] || data.dailySales?.[comparisonDate(0, -1, 0)]?.amount || 0;
-          const salesLy = data.historicalLastYear?.[comparisonDate(-1, 0, 0)] || data.dailySales?.[comparisonDate(-1, 0, 0)]?.amount || 0;
+          const salesLw = Number(data.msrClosingSummary?.lw || data.dailySales?.[comparisonDate(0, 0, -7)]?.amount || 0);
+          const salesLm = Number(data.msrClosingSummary?.lm || data.historicalLastMonth?.[comparisonDate(0, -1, 0)] || data.dailySales?.[comparisonDate(0, -1, 0)]?.amount || 0);
+          const salesLy = Number(data.msrClosingSummary?.ly || data.historicalLastYear?.[comparisonDate(-1, 0, 0)] || data.dailySales?.[comparisonDate(-1, 0, 0)]?.amount || 0);
           const comparePct = value => closingStoreTarget ? ` (${(value / closingStoreTarget * 100).toFixed(0)}%)` : '';
           const lobRows = combinedLob.map(item => `<tr><td>${escapeHtml(item.lob)}</td><td>${item.value}</td></tr>`).join('');
           const topBottom = Object.entries(dateSalesMap)
