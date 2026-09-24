@@ -680,19 +680,51 @@
         if (selectedUnit) combinedLob = combinedLob.filter(item => item.lob === unitMap[selectedUnit]);
         if (isClosingReport) {
           const closingDateLabel = new Date(`${dateKey}T00:00:00`).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
-          const closingRows = [
-            ['Store', 'M268'],
-            ['Date', closingDateLabel],
-            ['Status', dateTotalSales ? 'Done' : 'Not Done'],
-            ['Target Store', formatRp(data.dailyTarget)],
-            ['Total Sales', formatRp(dateTotalSales)],
-            ['Total Product', `${dateAppleQty} unit`],
-            ['Total Accessories', `${Math.max((data.dailySales[dateKey]?.qty || 0) - dateAppleQty, 0)} unit`],
-            ['Total Qoala', `${qoala}`],
-            ['Total Provider', `${provider}`],
-            ['Sales', rows.map(sale => sale.name).join(', ')],
-          ];
-          detailRoot.innerHTML = `<div class="sales-detail"><div class="sales-header"><h3>*M268 - Closing Report ${escapeHtml(closingDateLabel)}*</h3><span>Format closing file asli</span></div><table class="product-table"><tbody>${closingRows.map(([label, value]) => `<tr><th>${escapeHtml(label)}</th><td>${escapeHtml(value)}</td></tr>`).join('')}</tbody></table><h3>Detail LOB</h3><table class="product-table"><thead><tr><th>LOB</th><th>Qty</th></tr></thead><tbody>${combinedLob.map(item => `<tr><td>${escapeHtml(item.lob)}</td><td>${item.value}</td></tr>`).join('')}</tbody></table><div class="refresh-info">Closing difilter berdasarkan sales dan tanggal transaksi pada file sumber M268.</div></div>`;
+          const isTeamClosing = isRahman;
+          const dailyTarget = Number(data.dailyTarget || 0);
+          const selectedSale = rows.length === 1 ? rows[0] : null;
+          const salesTarget = selectedSale?.target || 0;
+          const salesDailyTarget = salesTarget ? salesTarget / 30 : dailyTarget;
+          const targetPct = dailyTarget ? (dateTotalSales / dailyTarget) * 100 : 0;
+          const mtdRevenue = rows.reduce((sum, sale) => sum + (sale.revenue || 0), 0);
+          const mtdTarget = rows.reduce((sum, sale) => sum + (sale.target || 0), 0);
+          const mtdPct = mtdTarget ? (mtdRevenue / mtdTarget) * 100 : 0;
+          const totalProductAmount = selectedProducts.reduce((sum, product) => sum + product.amount, 0);
+          const totalAccessories = Math.max(dateTotalSales - totalProductAmount, 0);
+          const lobRows = combinedLob.map(item => `<tr><td>${escapeHtml(item.lob)}</td><td>${item.value}</td></tr>`).join('');
+          const topBottom = Object.entries(dateSalesMap)
+            .sort(([, a], [, b]) => b.amount - a.amount)
+            .map(([name, values]) => `<tr><td>${escapeHtml(name)}</td><td>${formatRp(values.amount)}</td></tr>`).join('');
+          const reportRows = isTeamClosing
+            ? [
+              ['Target Store', `${formatRp(dailyTarget)} (${targetPct.toFixed(0)}%)`],
+              ['Daily To Target', formatRp(Math.max(dailyTarget - dateTotalSales, 0))],
+              ['Total Sales', `${formatRp(dateTotalSales)} (${targetPct.toFixed(0)}%)`],
+              ['Total Product', formatRp(totalProductAmount)],
+              ['Total Accessories', `${formatRp(totalAccessories)} (${dailyTarget ? ((totalAccessories / dailyTarget) * 100).toFixed(1) : '0.0'}%)`],
+              ['Rate Accessories', `${dailyTarget ? ((totalAccessories / dailyTarget) * 100).toFixed(1) : '0.0'}%`],
+              ['Total Qoala', qoala],
+              ['Total Telkomsel', provider],
+              ['Total Indosat', ''],
+              ['Total XXL', ''],
+              ['MTD Sales', `${formatRp(mtdRevenue)} (${mtdPct.toFixed(0)}%)`],
+              ['Sales LW', ''],
+              ['Sales LM', ''],
+              ['Sales LY', ''],
+            ]
+            : [
+              ['Target Store', `${formatRp(salesDailyTarget)} (${targetPct.toFixed(0)}%)`],
+              ['Daily To Target', formatRp(Math.max(salesDailyTarget - dateTotalSales, 0))],
+              ['Total Sales', `${formatRp(dateTotalSales)} (${salesDailyTarget ? ((dateTotalSales / salesDailyTarget) * 100).toFixed(0) : '0'}%)`],
+              ['Total Product', formatRp(totalProductAmount)],
+              ['Total Accessories', formatRp(totalAccessories)],
+              ['Total Qoala', qoala],
+              ['Total Provider', provider],
+              ['MTD Sales', `${formatRp(mtdRevenue)} (${mtdPct.toFixed(0)}%)`],
+              ['*Unit Terjual*', ''],
+              ['*Reason*', ''],
+            ];
+          detailRoot.innerHTML = `<div class="sales-detail"><div class="sales-header"><h3>*M268 - Closing Report ${escapeHtml(closingDateLabel)}*</h3><span>${isTeamClosing ? 'Closing Team' : `${escapeHtml(selectedSale?.name || nameQuery)}`}</span></div><table class="product-table"><tbody><tr><th>Store</th><td>M268</td></tr><tr><th>Date</th><td>${escapeHtml(closingDateLabel)}</td></tr><tr><th>Status</th><td>${dateTotalSales ? 'Done' : 'Not Done'}</td></tr>${reportRows.map(([label, value]) => `<tr><th>${escapeHtml(label)}</th><td>${escapeHtml(value)}</td></tr>`).join('')}</tbody></table><h3>Unit Terjual</h3><table class="product-table"><tbody>${lobRows}</tbody></table>${isTeamClosing ? `<h3>*Top - Buttom Sales*</h3><table class="product-table"><tbody>${topBottom || '<tr><td>Tidak ada transaksi pada tanggal ini.</td></tr>'}</tbody></table>` : ''}<div class="refresh-info">Format closing mengikuti file asli dan difilter berdasarkan ${isTeamClosing ? 'seluruh team' : 'nama sales'} serta tanggal yang dipilih.</div></div>`;
           return;
         }
         const title = dateKey
