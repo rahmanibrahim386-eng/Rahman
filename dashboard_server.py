@@ -15,8 +15,8 @@ HOST = '0.0.0.0'
 PORT = int(sys.argv[1]) if len(sys.argv) > 1 else 8000
 PASSWORD = os.environ.get('DASHBOARD_PASSWORD', 'rahman')
 SESSION_COOKIE = 'm268_dashboard_session'
-SESSION_TOKEN = secrets.token_urlsafe(32)
 SESSION_DURATION_SECONDS = 20 * 60
+ACTIVE_SESSIONS = {}
 LOGIN_PAGE = """<!doctype html>
 <html lang="id">
 <head>
@@ -56,14 +56,13 @@ class DashboardHandler(SimpleHTTPRequestHandler):
             name, separator, value = part.strip().partition('=')
             if name != SESSION_COOKIE or not separator:
                 continue
-            token, timestamp, timestamp_separator = value.rpartition('.')
-            if token != SESSION_TOKEN or not timestamp_separator:
+            expires_at = ACTIVE_SESSIONS.get(value)
+            if not expires_at:
                 return False
-            try:
-                issued_at = int(timestamp)
-            except ValueError:
+            if time.time() >= expires_at:
+                ACTIVE_SESSIONS.pop(value, None)
                 return False
-            return time.time() - issued_at < SESSION_DURATION_SECONDS
+            return True
         return False
 
     def _redirect_login(self):
@@ -84,10 +83,11 @@ class DashboardHandler(SimpleHTTPRequestHandler):
         if hmac.compare_digest(hashlib.sha256(supplied.encode()).digest(),
                                hashlib.sha256(PASSWORD.encode()).digest()):
             self.send_response(204)
-            issued_at = int(time.time())
+            token = secrets.token_urlsafe(32)
+            ACTIVE_SESSIONS[token] = time.time() + SESSION_DURATION_SECONDS
             self.send_header(
                 'Set-Cookie',
-                f'{SESSION_COOKIE}={SESSION_TOKEN}.{issued_at}; Max-Age={SESSION_DURATION_SECONDS}; '
+                f'{SESSION_COOKIE}={token}; Max-Age={SESSION_DURATION_SECONDS}; '
                 'HttpOnly; SameSite=Lax; Path=/'
             )
             self.end_headers()
