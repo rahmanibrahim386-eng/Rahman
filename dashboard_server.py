@@ -67,13 +67,33 @@ class DashboardHandler(SimpleHTTPRequestHandler):
             return True
         return False
 
+    def _session_token(self):
+        cookie = self.headers.get('Cookie', '')
+        for part in cookie.split(';'):
+            name, separator, value = part.strip().partition('=')
+            if name == SESSION_COOKIE and separator:
+                return value
+        return None
+
     def _redirect_login(self):
         self.send_response(302)
         self.send_header('Location', '/login')
         self.end_headers()
 
     def do_POST(self):
-        if self.path.split('?', 1)[0] != '/login':
+        path = self.path.split('?', 1)[0]
+        if path == '/logout':
+            token = self._session_token()
+            if token:
+                ACTIVE_SESSIONS.pop(token, None)
+            self.send_response(204)
+            self.send_header(
+                'Set-Cookie',
+                f'{SESSION_COOKIE}=; Max-Age=0; HttpOnly; SameSite=Lax; Path=/'
+            )
+            self.end_headers()
+            return
+        if path != '/login':
             self.send_error(404)
             return
         try:

@@ -4,6 +4,17 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>M268 Dashboard</title>
+    <script>
+      (() => {
+        const navigation = performance.getEntriesByType('navigation')[0];
+        if (navigation && navigation.type === 'reload') {
+          window.dashboardReloading = true;
+          document.documentElement.style.visibility = 'hidden';
+          fetch('/logout', { method: 'POST', credentials: 'same-origin', keepalive: true })
+            .finally(() => window.location.replace('/login'));
+        }
+      })();
+    </script>
     <style>
       :root {
         --bg: #0b1020;
@@ -722,8 +733,10 @@
         searchInput.value = filter;
         renderSalesDetail(searchInput.value);
       }));
-      refreshData();
-      setInterval(refreshData, 10 * 60 * 1000);
+      if (!window.dashboardReloading) {
+        refreshData();
+        setInterval(refreshData, 10 * 60 * 1000);
+      }
     </script>
   </body>
 </html>
