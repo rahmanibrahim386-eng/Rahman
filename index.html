@@ -521,6 +521,17 @@
         }
         const total = rows.reduce((sum, sale) => sum + sale.revenue, 0);
         const incentive = rows.reduce((sum, sale) => sum + sale.estimatedIncentive, 0);
+        const selectedNames = new Set(rows.map(sale => sale.name.toLowerCase()));
+        const dateProviderSales = dateKey
+          ? Object.entries((data.dailyProvider[dateKey] || {}).sales || {})
+            .filter(([name]) => isRahman || selectedNames.has(name.toLowerCase()))
+            .reduce((sum, [, values]) => sum + values.qty, 0)
+          : 0;
+        const dateQoalaSales = dateKey
+          ? Object.entries((data.dailyQoala[dateKey] || {}).sales || {})
+            .filter(([name]) => isRahman || selectedNames.has(name.toLowerCase()))
+            .reduce((sum, [, values]) => sum + values.qty, 0)
+          : 0;
         const qoala = dateKey ? dateQoalaSales : rows.reduce((sum, sale) => sum + sale.qoala, 0);
         const provider = dateKey ? dateProviderSales : rows.reduce((sum, sale) => sum + sale.provider, 0);
         const categoryTotals = [
@@ -553,7 +564,6 @@
             return items;
           }, [])
           .sort((a, b) => b.qty - a.qty);
-        const selectedNames = new Set(rows.map(sale => sale.name.toLowerCase()));
         const dateSales = dateKey
           ? Object.entries(dateSalesMap)
             .filter(([name]) => isRahman || selectedNames.has(name.toLowerCase()))
@@ -582,16 +592,6 @@
           })
           : [];
         const achievementRows = dateKey ? dailyRows : rows;
-        const dateProviderSales = dateKey
-          ? Object.entries((data.dailyProvider[dateKey] || {}).sales || {})
-            .filter(([name]) => isRahman || selectedNames.has(name.toLowerCase()))
-            .reduce((sum, [, values]) => sum + values.qty, 0)
-          : 0;
-        const dateQoalaSales = dateKey
-          ? Object.entries((data.dailyQoala[dateKey] || {}).sales || {})
-            .filter(([name]) => isRahman || selectedNames.has(name.toLowerCase()))
-            .reduce((sum, [, values]) => sum + values.qty, 0)
-          : 0;
         const dateAppleQty = dateKey
           ? data.products.filter(product => (isRahman || selectedNames.has(product.salesName.toLowerCase())) && product.date === dateKey)
             .reduce((sum, product) => sum + product.qty, 0)
@@ -602,10 +602,15 @@
             .reduce((sum, product) => sum + product.qty * (data.incentivePerUnit[product.unit] || 0), 0)
           : incentive;
         let combinedLob = Object.keys(data.incentivePerUnit).map(lob => ({
-          lob, value: rows.reduce((sum, sale) => sum + (sale.lob[lob] || 0), 0)
+          lob,
+          value: dateKey
+            ? selectedProducts.filter(product => product.unit === lob).reduce((sum, product) => sum + product.qty, 0)
+            : rows.reduce((sum, sale) => sum + (sale.lob[lob] || 0), 0)
         }));
         if (selectedUnit) combinedLob = combinedLob.filter(item => item.lob === unitMap[selectedUnit]);
-        const title = dateKey ? `Detail tanggal ${dateKey}` : isRahman ? 'Detail Keseluruhan Tim' : rows.map(sale => escapeHtml(sale.name)).join(', ');
+        const title = dateKey
+          ? `Detail ${nameQuery ? rows.map(sale => escapeHtml(sale.name)).join(', ') : 'sales'} tanggal ${dateKey}`
+          : isRahman ? 'Detail Keseluruhan Tim' : rows.map(sale => escapeHtml(sale.name)).join(', ');
         const productTitle = dateKey
           ? `Detail unit terjual pada ${dateKey}${selectedUnit ? ` · ${unitMap[selectedUnit]}` : ''}`
           : selectedUnit ? `Detail unit ${unitMap[selectedUnit]}` : 'Detail unit terjual';
