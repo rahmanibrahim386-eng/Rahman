@@ -6,6 +6,7 @@ import json
 import os
 import secrets
 import sys
+import time
 
 from generate_dashboard import parse_dashboard
 
@@ -15,6 +16,7 @@ PORT = int(sys.argv[1]) if len(sys.argv) > 1 else 8000
 PASSWORD = os.environ.get('DASHBOARD_PASSWORD', 'rahman')
 SESSION_COOKIE = 'm268_dashboard_session'
 SESSION_TOKEN = secrets.token_urlsafe(32)
+SESSION_DURATION_SECONDS = 20 * 60
 LOGIN_PAGE = """<!doctype html>
 <html lang="id">
 <head>
@@ -50,8 +52,19 @@ class DashboardHandler(SimpleHTTPRequestHandler):
 
     def _authorized(self):
         cookie = self.headers.get('Cookie', '')
-        expected = f'{SESSION_COOKIE}={SESSION_TOKEN}'
-        return any(part.strip() == expected for part in cookie.split(';'))
+        for part in cookie.split(';'):
+            name, separator, value = part.strip().partition('=')
+            if name != SESSION_COOKIE or not separator:
+                continue
+            token, timestamp, timestamp_separator = value.rpartition('.')
+            if token != SESSION_TOKEN or not timestamp_separator:
+                return False
+            try:
+                issued_at = int(timestamp)
+            except ValueError:
+                return False
+            return time.time() - issued_at < SESSION_DURATION_SECONDS
+        return False
 
     def _redirect_login(self):
         self.send_response(302)
@@ -71,7 +84,12 @@ class DashboardHandler(SimpleHTTPRequestHandler):
         if hmac.compare_digest(hashlib.sha256(supplied.encode()).digest(),
                                hashlib.sha256(PASSWORD.encode()).digest()):
             self.send_response(204)
-            self.send_header('Set-Cookie', f'{SESSION_COOKIE}={SESSION_TOKEN}; HttpOnly; SameSite=Lax; Path=/')
+            issued_at = int(time.time())
+            self.send_header(
+                'Set-Cookie',
+                f'{SESSION_COOKIE}={SESSION_TOKEN}.{issued_at}; Max-Age={SESSION_DURATION_SECONDS}; '
+                'HttpOnly; SameSite=Lax; Path=/'
+            )
             self.end_headers()
         else:
             self.send_error(401)
