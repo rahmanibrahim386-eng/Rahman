@@ -51,6 +51,8 @@ def parse_dashboard():
     roster_wb = load_workbook(ROSTER_WORKBOOK, data_only=True, read_only=True)
     roster_master = roster_wb['MASTER MPP M268']
     roster_schedule = roster_wb['ROSTER']
+    database_wb = load_workbook(source_file('R DATA BASE M268.xlsx'), data_only=True, read_only=True)
+    database_ws = database_wb['R DATA BASE M268']
     rekap_rows = list(rekap.iter_rows(min_row=5, max_row=15, values_only=True))
     target_row = rekap_rows[1]
     achievement_row = rekap_rows[2]
@@ -136,6 +138,19 @@ def parse_dashboard():
         schedule_by_name[str(name).strip().casefold()] = entries
     for member in roster:
         member['schedule'] = schedule_by_name.get(member['name'].casefold(), [])
+    database = []
+    for row in database_ws.iter_rows(min_row=2, values_only=True):
+        if not any(row):
+            continue
+        start_time, completion_time, customer, phone, product = row[1:6]
+        database.append({
+            'id': str(row[0] or ''),
+            'startTime': start_time.strftime('%Y-%m-%d %H:%M') if hasattr(start_time, 'strftime') else str(start_time or ''),
+            'completionTime': completion_time.strftime('%Y-%m-%d %H:%M') if hasattr(completion_time, 'strftime') else str(completion_time or ''),
+            'customer': str(customer or '').strip(),
+            'phone': str(phone or '').replace('\u202a', '').replace('\u202c', '').strip(),
+            'product': str(product or '').strip(),
+        })
     all_products = []
     accessory_qty = 0
     vas_qty = 0
@@ -383,6 +398,7 @@ def parse_dashboard():
         'products': all_products,
         'roster': roster,
         'stock': stock,
+        'database': database,
     }
 
     return summary

@@ -311,6 +311,7 @@
           <button type="button" data-filter="ShopeePay Later">ShopeePay Later</button>
           <button type="button" data-filter="mading">Mading</button>
           <button type="button" data-filter="roster">Roster team</button>
+          <button type="button" data-filter="database">Database toko</button>
         </div>
         <div class="refresh-info" id="refresh-info">Memuat data terbaru...</div>
       </section>
@@ -445,6 +446,7 @@
         ];
         const selectedBnplProvider = bnplProviders.find(([keyword]) => normalized.includes(keyword))?.[1];
         const isMadingFilter = normalized.includes('mading');
+        const isDatabaseFilter = normalized.includes('database') || normalized.includes('data base');
         const stockUnitMap = { iphone: 'iPhone', ipad: 'iPad', mac: 'Mac', watch: 'Apple Watch' };
         const selectedStockUnit = normalized.includes('stock') ? Object.keys(stockUnitMap).find(key => normalized.includes(key)) : null;
         const isRosterFilter = normalized.includes('roster');
@@ -462,6 +464,15 @@
               <div class="schedule-table-wrap"><table class="product-table schedule-table"><thead><tr><th class="schedule-sticky">Nama</th><th>Posisi</th>${(data.roster[0]?.schedule || []).map(item => `<th>${item.date.slice(8)}<small>${new Date(`${item.date}T00:00:00`).toLocaleDateString('id-ID', { weekday: 'short' })}</small></th>`).join('')}</tr></thead>
               <tbody>${data.roster.map(member => `<tr><td class="schedule-sticky">${escapeHtml(member.name)}</td><td>${escapeHtml(member.position)}</td>${(member.schedule || []).map(item => `<td class="shift-${item.code.replace(/[^A-Z]/g, '').toLowerCase()}">${escapeHtml(item.label)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>
               <div class="refresh-info">Kode jadwal: Morning (D047) · Afternoon (D103) · Middle (D083) · OFF · Leave (X&amp;C).</div>
+            </div>`;
+          return;
+        }
+        if (isDatabaseFilter) {
+          detailRoot.innerHTML = `
+            <div class="sales-detail">
+              <div class="sales-header"><h3>Database Toko</h3><span>${data.database?.length || 0} data</span></div>
+              <div class="schedule-table-wrap"><table class="product-table"><thead><tr><th>ID</th><th>Mulai</th><th>Selesai</th><th>Nama Customer</th><th>No. HP</th><th>Produk Dicari</th></tr></thead>
+              <tbody>${data.database?.length ? data.database.map(item => `<tr><td>${escapeHtml(item.id)}</td><td>${escapeHtml(item.startTime)}</td><td>${escapeHtml(item.completionTime)}</td><td>${escapeHtml(item.customer)}</td><td>${escapeHtml(item.phone)}</td><td>${escapeHtml(item.product)}</td></tr>`).join('') : '<tr><td colspan="6">Database kosong.</td></tr>'}</tbody></table></div>
             </div>`;
           return;
         }
