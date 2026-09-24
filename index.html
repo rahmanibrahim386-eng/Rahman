@@ -707,7 +707,9 @@
           const closingSfTarget = Number(data.closingTargetSf || 0);
           const closingStorePct = closingStoreTarget ? (dateTotalSales / closingStoreTarget) * 100 : 0;
           const closingSfPct = closingSfTarget ? (dateTotalSales / closingSfTarget) * 100 : 0;
-          const mtdRevenue = Number(data.msrClosingSummary?.mtd || rows.reduce((sum, sale) => sum + (sale.revenue || 0), 0));
+          const mtdRevenue = Object.entries(data.dailySales || {})
+            .filter(([key]) => key.slice(0, 7) === dateKey.slice(0, 7) && key <= dateKey)
+            .reduce((sum, [, values]) => sum + Number(values.amount || 0), 0);
           const mtdTarget = rows.reduce((sum, sale) => sum + (sale.target || 0), 0);
           const mtdPct = mtdTarget ? (mtdRevenue / mtdTarget) * 100 : 0;
           const totalProductAmount = selectedProducts.reduce((sum, product) => sum + product.amount, 0);
