@@ -408,6 +408,7 @@ def parse_dashboard():
         'dailyProvider': daily_provider,
         'periodTotals': period_totals,
         'currentMonth': current_month,
+        'dailyTarget': float(target_row[3] or 0) / days_in_month,
         'products': all_products,
         'roster': roster,
         'stock': stock,
