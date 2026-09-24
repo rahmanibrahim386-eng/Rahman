@@ -306,14 +306,12 @@
       <section class="card search-panel">
         <h2>Search Sales Performance</h2>
         <div class="search-row">
-          <input id="sales-search" type="search" placeholder="Virginia, Rahman, iPhone, iPad, Mac, Watch, AirPods, M268, CM, LM, LY" autocomplete="off" />
+          <input id="sales-search" type="search" placeholder="Virginia, Rahman, iPhone, iPad, Mac, Watch, AirPods, atau Report Closing" autocomplete="off" />
           <input id="date-filter" type="date" aria-label="Filter tanggal" />
         </div>
         <div class="quick-filters">
           <button type="button" data-filter="M268">M268</button>
-          <button type="button" data-filter="CM">CM</button>
-          <button type="button" data-filter="LM">LM</button>
-          <button type="button" data-filter="LY">LY</button>
+          <button type="button" data-filter="closing M268">Report Closing</button>
           <button type="button" data-filter="stock iphone">Stock iPhone</button>
           <button type="button" data-filter="stock mac">Stock Mac</button>
           <button type="button" data-filter="stock watch">Stock Watch</button>
@@ -467,8 +465,9 @@
         const selectedUnit = Object.keys(unitMap).find(key => normalized.includes(key));
         const isBnplFilter = normalized.includes('bnpl') || Boolean(selectedBnplProvider);
         const periodKey = normalized.includes('ly') ? 'LY' : normalized.includes('lm') ? 'LM' : normalized.includes('cm') || normalized.includes('m268') ? 'CM' : '';
+        const isClosingReport = normalized.includes('closing');
         const nameQuery = normalized
-          .replace(/\b(stock|sales|staff|team|provider|unit|detail|iphone|ipad|mac|desktop|laptop|watch|apple|airpods|m268|cm|lm|ly|bnpl|kredivo|akulaku|hci|shopeepay|later|qoala|telkomsel|indosat|xl|xxl)\b/g, '')
+          .replace(/\b(closing|report|stock|sales|staff|team|provider|unit|detail|iphone|ipad|mac|desktop|laptop|watch|apple|airpods|m268|cm|lm|ly|bnpl|kredivo|akulaku|hci|shopeepay|later|qoala|telkomsel|indosat|xl|xxl)\b/g, '')
           .trim();
         if (isRosterFilter) {
           detailRoot.innerHTML = `
@@ -546,12 +545,12 @@
           return;
         }
         const matches = data.sales.filter(sale => nameQuery && sale.name.toLowerCase().includes(nameQuery));
-        const hasNonSalesFilter = selectedUnit || periodKey || dateKey || isBnplFilter || normalized === 'rahman';
+        const hasNonSalesFilter = selectedUnit || periodKey || dateKey || isBnplFilter || isClosingReport || normalized === 'rahman';
         if (!matches.length && !hasNonSalesFilter) {
           detailRoot.innerHTML = `<div class="detail-empty">Tidak ada data sales yang cocok dengan “${escapeHtml(query)}”.</div>`;
           return;
         }
-        const isRahman = nameQuery.includes('rahman') || (!nameQuery && (normalized === 'm268' || periodKey));
+        const isRahman = (isClosingReport && !nameQuery) || nameQuery.includes('rahman') || (!nameQuery && (normalized === 'm268' || periodKey));
         const dateSalesMap = dateKey ? ((data.dailySales[dateKey] || {}).sales || {}) : {};
         const dateSalesNames = new Set(Object.keys(dateSalesMap).map(name => name.toLowerCase()));
         const dateOnly = Boolean(dateKey) && !nameQuery && !isRahman && !isBnplFilter && !selectedUnit;
@@ -677,7 +676,7 @@
         if (selectedUnit) combinedLob = combinedLob.filter(item => item.lob === unitMap[selectedUnit]);
         const title = dateKey
           ? `Detail ${nameQuery ? rows.map(sale => escapeHtml(sale.name)).join(', ') : 'sales'} tanggal ${dateKey}`
-          : isRahman ? 'Detail Keseluruhan Tim' : rows.map(sale => escapeHtml(sale.name)).join(', ');
+          : isClosingReport ? 'Report Closing M268' : isRahman ? 'Detail Keseluruhan Tim' : rows.map(sale => escapeHtml(sale.name)).join(', ');
         const productTitle = dateKey
           ? `Detail unit terjual pada ${dateKey}${selectedUnit ? ` · ${unitMap[selectedUnit]}` : ''}`
           : selectedUnit ? `Detail unit ${unitMap[selectedUnit]}` : 'Detail unit terjual';
@@ -685,7 +684,7 @@
         const showDateSalesMetrics = Boolean(dateKey) && !showBnplDateMetrics;
         detailRoot.innerHTML = `
           <div class="sales-detail">
-            <div class="sales-header"><h3>${title}</h3><span>${periodKey || 'M268'} · ${rows.length} sales</span></div>
+            <div class="sales-header"><h3>${title}</h3><span>${isClosingReport ? 'Bulan berjalan' : periodKey || 'M268'} · ${rows.length} sales</span></div>
             <div class="detail-metrics">
               <div class="detail-metric"><span class="detail-label">${showBnplDateMetrics ? 'BNPL Amount' : showDateSalesMetrics ? 'Total Sales' : 'Revenue'}</span><b>${formatRp(showBnplDateMetrics ? daily?.amount : showDateSalesMetrics ? (selectedUnit ? selectedProducts.reduce((sum, product) => sum + product.amount, 0) : dateTotalSales) : total)}</b></div>
               <div class="detail-metric"><span class="detail-label">${dateKey ? 'Achievement vs Target Harian' : 'Achievement Revenue'}</span><b>${dateKey ? `${selectedDateAchievementPct.toFixed(1)}%` : `${achievementPct.toFixed(1)}%`}</b><div class="refresh-info">${dateKey ? `Revenue ${formatRp(selectedDateRevenue)} vs Target harian ${formatRp(dailyTarget)}` : `Revenue ${formatRp(achievementAmount)} vs Target ${formatRp(achievementTarget)}`}</div></div>
@@ -711,7 +710,7 @@
             ${selectedProducts.length ? `<table class="product-table"><thead><tr><th>Produk</th><th>Unit</th><th>Nilai</th></tr></thead><tbody>${selectedProducts.map(product => `<tr><td>${escapeHtml(product.description)}</td><td>${product.qty}</td><td>${formatRp(product.amount)}</td></tr>`).join('')}</tbody></table>` : '<div class="detail-empty">Belum ada transaksi produk untuk filter ini pada bulan berjalan.</div>'}
             ${dateKey ? `<h3>Total sales per sales pada ${dateKey}</h3>${dateSales.length ? `<table class="product-table"><thead><tr><th>Sales</th><th>Apple Unit</th><th>Total Sales</th></tr></thead><tbody>${dateSales.map(sale => `<tr><td>${escapeHtml(sale.name)}</td><td>${sale.qty}</td><td>${formatRp(sale.amount)}</td></tr>`).join('')}</tbody></table>` : '<div class="detail-empty">Tidak ada transaksi pada tanggal ini.</div>'}` : ''}
             ${isBnplFilter ? `<div class="refresh-info">Periode ${period}: BNPL ${formatRp(monthly.amount)} / ${monthly.qty} transaksi.</div>` : ''}
-            <div class="refresh-info">Qoala mengikuti transaksi pada tanggal dan sales yang dipilih. Insentif: ${Object.entries(data.incentivePerUnit).map(([lob, rate]) => `${lob} ${formatRp(rate)}`).join(' · ')}</div>
+            <div class="refresh-info">${isClosingReport ? 'Report closing dihitung dari seluruh transaksi bulan berjalan dan dapat difilter berdasarkan nama sales.' : 'Qoala mengikuti transaksi pada tanggal dan sales yang dipilih.'} Insentif: ${Object.entries(data.incentivePerUnit).map(([lob, rate]) => `${lob} ${formatRp(rate)}`).join(' · ')}</div>
           </div>`;
       }
 
