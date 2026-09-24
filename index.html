@@ -582,7 +582,7 @@
         }
         const total = rows.reduce((sum, sale) => sum + sale.revenue, 0);
         const incentive = rows.reduce((sum, sale) => sum + sale.estimatedIncentive, 0);
-        const achievementAmount = rows.reduce((sum, sale) => sum + (sale.achievement || 0), 0);
+        const achievementAmount = rows.reduce((sum, sale) => sum + (sale.revenue || 0), 0);
         const achievementTarget = rows.reduce((sum, sale) => sum + (sale.target || 0), 0);
         const achievementPct = achievementTarget ? (achievementAmount / achievementTarget) * 100 : 0;
         const selectedNames = new Set(rows.map(sale => sale.name.toLowerCase()));
@@ -685,7 +685,7 @@
             <div class="sales-header"><h3>${title}</h3><span>${periodKey || 'M268'} · ${rows.length} sales</span></div>
             <div class="detail-metrics">
               <div class="detail-metric"><span class="detail-label">${showBnplDateMetrics ? 'BNPL Amount' : showDateSalesMetrics ? 'Total Sales' : 'Revenue'}</span><b>${formatRp(showBnplDateMetrics ? daily?.amount : showDateSalesMetrics ? (selectedUnit ? selectedProducts.reduce((sum, product) => sum + product.amount, 0) : dateTotalSales) : total)}</b></div>
-              <div class="detail-metric"><span class="detail-label">${dateKey ? 'Achievement tanggal' : 'Achievement'}</span><b>${dateKey ? formatRp(achievementRows.reduce((sum, sale) => sum + (sale.achievement || 0), 0)) : `${achievementPct.toFixed(1)}%`}</b><div class="refresh-info">${dateKey ? 'Nilai transaksi pada tanggal terpilih' : `Target ${formatRp(achievementTarget)}`}</div></div>
+              <div class="detail-metric"><span class="detail-label">${dateKey ? 'Achievement tanggal' : 'Achievement Revenue'}</span><b>${dateKey ? formatRp(achievementRows.reduce((sum, sale) => sum + (sale.achievement || 0), 0)) : `${achievementPct.toFixed(1)}%`}</b><div class="refresh-info">${dateKey ? 'Nilai transaksi pada tanggal terpilih' : `Revenue ${formatRp(achievementAmount)} vs Target ${formatRp(achievementTarget)}`}</div></div>
               <div class="detail-metric"><span class="detail-label">${showBnplDateMetrics ? 'BNPL Qty' : showDateSalesMetrics ? 'Apple Unit Terjual' : 'Total Device'}</span><b>${showBnplDateMetrics ? (daily?.qty || 0) : showDateSalesMetrics ? (selectedUnit ? selectedProducts.reduce((sum, product) => sum + product.qty, 0) : dateAppleQty) : rows.reduce((sum, sale) => sum + sale.totalDevice, 0)}</b></div>
               <div class="detail-metric"><span class="detail-label">Est. Incentive</span><b>${formatRp(dateKey ? dateIncentive : incentive)}</b></div>
               <div class="detail-metric"><span class="detail-label">${dateKey ? 'Qoala tanggal' : 'Qoala'}</span><b>${qoala}</b></div>
